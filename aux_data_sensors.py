@@ -102,7 +102,7 @@ alarm_aux_channel_6_updated = renomve_null_subtruct_min_sort(alarm_aux_channel_6
 alarm_aux_channel_7_updated = renomve_null_subtruct_min_sort(alarm_aux_channel_7)
 alarm_aux_channel_8_updated = renomve_null_subtruct_min_sort(alarm_aux_channel_8)
 alarm_aux_channel_9_updated = renomve_null_subtruct_min_sort(alarm_aux_channel_9)
-week = 604800
+week = 86400
 # day = 86400, 604800
 # list_count_max = math.ceil(np.amax(alarm_aux_channel_1_updated, axis=0)[0] / week)
 list_count_max = max(math.ceil(np.amax(alarm_aux_channel_1_updated, axis=0)[0] / week),math.ceil(np.amax(alarm_aux_channel_2_updated, axis=0)[0] / week),math.ceil(np.amax(alarm_aux_channel_3_updated, axis=0)[0] / week),
@@ -128,6 +128,7 @@ array_list_aux_8 = [ [] for i in range(list_count_max) ]
 array_list_aux_8_numpy = [ [] for i in range(list_count_max) ]
 array_list_aux_9 = [ [] for i in range(list_count_max) ]
 array_list_aux_9_numpy = [ [] for i in range(list_count_max) ]
+
 for i in range(list_count_max):
     array_list_aux_1[i].append([x for x in alarm_aux_channel_1_updated if (i + 1) * week > x[0] >= i * week])
     array_list_aux_1_numpy[i] = (np.concatenate(np.asarray(array_list_aux_1[i]), axis=0))
@@ -157,43 +158,121 @@ for i in range(list_count_max):
     array_list_aux_9_numpy[i] = (np.concatenate(np.asarray(array_list_aux_9[i]), axis=0))
 
 
-for count in range(list_count_max):
-    flag = 0
-    if array_list_aux_1_numpy[count].size != 0:
-        plt.scatter(array_list_aux_1_numpy[count][:, 0], array_list_aux_1_numpy[count][:, 1], s=0.5, c="blue")
-        flag = 1
-    if array_list_aux_2_numpy[count].size != 0:
-        plt.scatter(array_list_aux_2_numpy[count][:, 0], array_list_aux_2_numpy[count][:, 1], s=0.5, c="black")
-        flag = 1
-    if array_list_aux_3_numpy[count].size != 0:
-        plt.scatter(array_list_aux_3_numpy[count][:, 0], array_list_aux_3_numpy[count][:, 1], s=0.5, c="yellow")
-        flag = 1
-    if array_list_aux_4_numpy[count].size != 0:
-        plt.scatter(array_list_aux_4_numpy[count][:, 0], array_list_aux_4_numpy[count][:, 1], s=0.5, c="cyan")
-        flag = 1
-    if array_list_aux_5_numpy[count].size != 0:
-        plt.scatter(array_list_aux_5_numpy[count][:, 0], array_list_aux_5_numpy[count][:, 1], s=0.5, c="red")
-        flag = 1
-    if array_list_aux_6_numpy[count].size != 0:
-        plt.scatter(array_list_aux_6_numpy[count][:, 0], array_list_aux_6_numpy[count][:, 1], s=0.5, c="green")
-        flag = 1
-    if array_list_aux_7_numpy[count].size != 0:
-        plt.scatter(array_list_aux_7_numpy[count][:, 0], array_list_aux_7_numpy[count][:, 1], s=0.5, c="magenta")
-        flag = 1
-    if array_list_aux_8_numpy[count].size != 0:
-        plt.scatter(array_list_aux_8_numpy[count][:, 0], array_list_aux_8_numpy[count][:, 1], s=0.5, c='#A2142F')
-        flag = 1
-    if array_list_aux_9_numpy[count].size != 0:
-        plt.scatter(array_list_aux_9_numpy[count][:, 0], array_list_aux_9_numpy[count][:, 1], s=0.5, c='#77AC30')
-        flag = 1
+def prefix_sum(data, legnth):
+    time_unit = 86400/legnth
+    res = np.zeros(int(np.ceil(legnth)),dtype=float)
+    if len(data) == 0:
+        return res
+    minimum_time_local = min(data[:,0])
+    for i in range(len(data)): #reducing the minimum time
+        data[i,0] -= float(minimum_time_local)
 
-    if flag is 1:
-        title_str = "Aux Stat , week number " + str(count)
-        plt.title(title_str)
-        plt.xlabel('Time')
-        plt.ylabel('Value')
-        title_str_png = title_str + ".png"
-        plt.savefig(title_str_png, dpi=300, bbox_inches='tight')
-        plt.show()
-        title_str_png = title_str + ".png"
+    for row in data:
+        if 0 <= row[0] <= time_unit:
+            res[0] +=  row[1]
+
+    i=1
+    for current_time_slot in range(int(time_unit),86400,int(time_unit)):
+        flag = 0
+        if i == legnth: break
+        res[i] = res[i - 1]
+        for row in data:
+            if  float(current_time_slot)  <= row[0] <= float(current_time_slot + time_unit):
+                #flag =1
+                res[i] += row[1]
+        #if flag == 0:
+         #   res[i] = res[i-1]
+        i += 1
+    return res
+
+def calculate_avg_of_list(list):
+    avg = 0
+    count_without_zero = 0
+    for i in range(len(list)):
+        if (len(list[i]) != 0):
+            avg += len(list[i])
+            count_without_zero += 1
+
+    avg /= count_without_zero
+    return avg
+
+def make_1D_array_per_one_aux_sensor(list): #recieves a list of list.
+    avg = calculate_avg_of_list(list)
+    if avg < len(list):
+        avg = len(list)
+    D1_arrays_aux_sensor = []
+    for i in range(len(list)):
+        D1_arrays_aux_sensor.append(prefix_sum(list[i], int(np.ceil(avg))))
+
+
+def return_data():
+    D1_arrays_aux_sensor_1 = make_1D_array_per_one_aux_sensor(array_list_aux_1_numpy)
+    D1_arrays_aux_sensor_2 = make_1D_array_per_one_aux_sensor(array_list_aux_2_numpy)
+    D1_arrays_aux_sensor_3 = make_1D_array_per_one_aux_sensor(array_list_aux_3_numpy)
+    D1_arrays_aux_sensor_4 = make_1D_array_per_one_aux_sensor(array_list_aux_4_numpy)
+    D1_arrays_aux_sensor_5 = make_1D_array_per_one_aux_sensor(array_list_aux_5_numpy)
+    D1_arrays_aux_sensor_6 = make_1D_array_per_one_aux_sensor(array_list_aux_6_numpy)
+    D1_arrays_aux_sensor_7 = make_1D_array_per_one_aux_sensor(array_list_aux_7_numpy)
+    D1_arrays_aux_sensor_8 = make_1D_array_per_one_aux_sensor(array_list_aux_8_numpy)
+    D1_arrays_aux_sensor_9 = make_1D_array_per_one_aux_sensor(array_list_aux_9_numpy)
+    result_list = []
+    result_list.append(D1_arrays_aux_sensor_1)
+    result_list.append(D1_arrays_aux_sensor_2)
+    result_list.append(D1_arrays_aux_sensor_3)
+    result_list.append(D1_arrays_aux_sensor_4)
+    result_list.append(D1_arrays_aux_sensor_5)
+    result_list.append(D1_arrays_aux_sensor_6)
+    result_list.append(D1_arrays_aux_sensor_7)
+    result_list.append(D1_arrays_aux_sensor_8)
+    result_list.append(D1_arrays_aux_sensor_9)
+    return result_list
+
+return_data()
+
+
+
+
+
+# for count in range(list_count_max):
+#     flag = 0
+#     if array_list_aux_1_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_1_numpy[count][:, 0], array_list_aux_1_numpy[count][:, 1], s=0.5, c="blue")
+#         flag = 1
+#     if array_list_aux_2_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_2_numpy[count][:, 0], array_list_aux_2_numpy[count][:, 1], s=0.5, c="black")
+#         flag = 1
+#     if array_list_aux_3_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_3_numpy[count][:, 0], array_list_aux_3_numpy[count][:, 1], s=0.5, c="yellow")
+#         flag = 1
+#     if array_list_aux_4_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_4_numpy[count][:, 0], array_list_aux_4_numpy[count][:, 1], s=0.5, c="cyan")
+#         flag = 1
+#     if array_list_aux_5_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_5_numpy[count][:, 0], array_list_aux_5_numpy[count][:, 1], s=0.5, c="red")
+#         flag = 1
+#     if array_list_aux_6_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_6_numpy[count][:, 0], array_list_aux_6_numpy[count][:, 1], s=0.5, c="green")
+#         flag = 1
+#     if array_list_aux_7_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_7_numpy[count][:, 0], array_list_aux_7_numpy[count][:, 1], s=0.5, c="magenta")
+#         flag = 1
+#     if array_list_aux_8_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_8_numpy[count][:, 0], array_list_aux_8_numpy[count][:, 1], s=0.5, c='#A2142F')
+#         flag = 1
+#     if array_list_aux_9_numpy[count].size != 0:
+#         plt.scatter(array_list_aux_9_numpy[count][:, 0], array_list_aux_9_numpy[count][:, 1], s=0.5, c='#77AC30')
+#         flag = 1
+#
+#     if flag is 1:
+#         title_str = "Aux Stat , week number " + str(count)
+#         plt.title(title_str)
+#         plt.xlabel('Time')
+#         plt.ylabel('Value')
+#         title_str_png = title_str + ".png"
+#         plt.savefig(title_str_png, dpi=300, bbox_inches='tight')
+#         plt.show()
+#         title_str_png = title_str + ".png"
     # plt.imsave(title_str_png,)
+
+
+

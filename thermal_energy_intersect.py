@@ -3,6 +3,7 @@ import xlrd
 import datetime
 import matplotlib.pyplot as plt
 import math
+import torch
 ########################################################################################################################
 #aux methods
 ########################################################################################################################
@@ -98,17 +99,20 @@ def make_intersection_energy_manag_thermal_prob(energy, thermal):
         array_list_thermal.append([x for x in thermal if (i + 1) * week > x[0] >= i * week])
 
     mat_list_thermal = []
+    tensor_list_thermal = []
     for i in range(len(array_list_thermal)):
         mat_list_thermal.append(np.asarray(array_list_thermal[i]))
+        tensor_list_thermal.append(torch.from_numpy(np.asarray(array_list_thermal[i])))
 
     array_list_energy = []
     for i in range(math.ceil(np.amax(energy, axis=0)[0] / week)):
         array_list_energy.append([x for x in energy if (i + 1) * week > x[0] >= i * week])
 
     mat_list_energy = []
+    tensor_list_energy = []
     for i in range(len(array_list_energy)):
         mat_list_energy.append(np.asarray(array_list_energy[i]))
-
+        tensor_list_energy.append(torch.from_numpy(np.asarray(array_list_energy[i])))
     # print("number of mats in energy list " +str(len(mat_list_energy)))
     # print("number of mats in thermal list " + str(len(mat_list_thermal)))
     # count = 0
@@ -126,24 +130,27 @@ def make_intersection_energy_manag_thermal_prob(energy, thermal):
     #     count += 1
 
     count = 0
-    for current_mat in mat_list_thermal:
-        if len(current_mat) is 0:
-            print( "week number " + str(count) +" is empty.")
-            count+=1
-            continue
-        plt.scatter(current_mat[:, 0], current_mat[:, 1], s=1, c='blue')
-        title_str = "Thermal, day number " +str(count)
-        plt.title(title_str)
-        plt.xlabel('Time')
-        plt.ylabel('Value')
-        title_str_png = title_str + ".png"
-        plt.savefig(title_str_png, dpi=300, bbox_inches='tight')
-        plt.show()
-        title_str_png = title_str +".png"
-        #plt.imsave(title_str_png,)
-        count += 1
-    # mat_list_energy = list of numpy arrays, each array is a week of time.
+    # for current_mat in mat_list_thermal:
+    #     if len(current_mat) is 0:
+    #         print( "week number " + str(count) +" is empty.")
+    #         count+=1
+    #         continue
+    #     plt.scatter(current_mat[:, 0], current_mat[:, 1], s=1, c='blue')
+    #     title_str = "Thermal, day number " +str(count)
+    #     plt.title(title_str)
+    #     plt.xlabel('Time')
+    #     plt.ylabel('Value')
+    #     title_str_png = title_str + ".png"
+    #     plt.savefig(title_str_png, dpi=300, bbox_inches='tight')
+    #     plt.show()
+    #     title_str_png = title_str +".png"
+    #     #plt.imsave(title_str_png,)
+    #     count += 1
+    #for saving
 
+
+
+    # mat_list_energy = list of numpy arrays, each array is a week of time.
     # count = 0
     # for count in range(len(mat_list_thermal)):
     #     if len(mat_list_energy[count]) is 0 or len(mat_list_thermal[count]) is 0:
@@ -160,7 +167,7 @@ def make_intersection_energy_manag_thermal_prob(energy, thermal):
     #     plt.show()
     #     count += 1
 
-    return mat_list_thermal, mat_list_energy
+    return mat_list_thermal, mat_list_energy, tensor_list_thermal, tensor_list_energy
 
 
 
@@ -219,20 +226,84 @@ for x in range(0, rows):
 Thermal_probe_merge = np.delete(Thermal_probe_merge, indices_Thermal_probe_merge, axis=0)
 # find the minimum value of time
 minimum_time_Thermal_probe_merge = np.amin(Thermal_probe_merge, axis=0)
-print("minimum time value for thermal is " + str(minimum_time_Thermal_probe_merge[0]))
-print("difference between minimum time between thermal and energy is " + str(minimum_time_Thermal_probe_merge[0] -minimum_time[0] ) )
+#print("minimum time value for thermal is " + str(minimum_time_Thermal_probe_merge[0]))
+#print("difference between minimum time between thermal and energy is " + str(minimum_time_Thermal_probe_merge[0] -minimum_time[0] ) )
 Thermal_probe_merge[:, 0] -= float(minimum_time_Thermal_probe_merge[0])
 thermal_probe_merge_sorted = Thermal_probe_merge[np.argsort(Thermal_probe_merge[:, 0])]
 #Thermal_probe_merge_splited = np.array_split(Thermal_probe_merge, 1700, axis=0)  # 38 entries (rows)
 ########################################################################################################################
 #intersection preparation
 ########################################################################################################################
-list_mat_thermal, list_mat_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
-                                                                                thermal_probe_merge_sorted)
+#list_mat_thermal, list_mat_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
+                                                                                #thermal_probe_merge_sorted)
+########################################################################################################################
+#transformation to tensor flow
+########################################################################################################################
+torch_thermal_merge_tensor = torch.from_numpy(thermal_probe_merge_sorted)
+torch_eng_mana_actuator_merge_tensor = torch.from_numpy(eng_mana_actuator_merge_sorted)
+# print(torch_eng_mana_actuator_merge_tensor)
+
+def pad_tensor_list(list):
+    max_len = max([len(i) for i in list])
+    return [torch.cat((l, torch.zeros(max_len - len(l), 2, dtype=torch.float64)), dim=0 ) for l in list], max_len
+###
+    week = 86400
+    array_list_thermal = []
+    for i in range(math.ceil(np.amax(thermal, axis=0)[0] / week)):
+        array_list_thermal.append([x for x in thermal if (i + 1) * week > x[0] >= i * week])
+
+
+def prefix_sum(data, legnth):
+    time_unit = 86400/legnth
+    res = np.zeros(int(np.ceil(legnth)),dtype=float)
+    if len(data) == 0:
+        return res
+    minimum_time_local = min(data[:,0])
+    for i in range(len(data)): #reducing the minimum time
+        data[i,0] -= float(minimum_time_local)
+
+    for row in data:
+        if 0 <= row[0] <= time_unit:
+            res[0] +=  row[1]
+
+    i=1
+    for current_time_slot in range(int(time_unit),86400,int(time_unit)):
+        flag = 0
+        if i == legnth: break
+        res[i] = res[i - 1]
+        for row in data:
+            if  float(current_time_slot)  <= row[0] <= float(current_time_slot + time_unit):
+                #flag =1
+                res[i] += row[1]
+        #if flag == 0:
+         #   res[i] = res[i-1]
+        i += 1
+    return res
 
 
 
+def return_data():
+    list_mat_thermal, list_mat_energy, tensor_list_thermal, tensor_list_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
+    thermal_probe_merge_sorted)
+    avg = 0
+    for i in range(len(list_mat_energy)):
+        avg += len(list_mat_energy)
+    avg /= len(list_mat_energy)
+    D1_arrays_energy = []
+    for i in range(len(list_mat_energy)):
+        D1_arrays_energy.append(prefix_sum(list_mat_energy[i], int(np.ceil(avg))))
+    D1_arrays_thermal = []
+    for i in range(len(list_mat_energy)):
+        D1_arrays_thermal.append(prefix_sum(list_mat_thermal[i], int(np.ceil(avg))))
 
+    return D1_arrays_energy, D1_arrays_thermal
+    #max(list_mat_energy[3][:,0])- min(list_mat_energy[3][:,0])
+    # tensor_list_thermal_padded, thermal_max= pad_tensor_list(tensor_list_thermal)
+    # tensor_list_energy_padded, energy_max = pad_tensor_list(tensor_list_energy)
+    # return tensor_list_thermal, tensor_list_thermal_padded,thermal_max, tensor_list_energy, tensor_list_energy_padded, energy_max
+
+
+########################################################################################################################
 # split the matrix into submatrix.
 # eng_mana_actuator_merge_splitted = np.array_split(eng_mana_actuator_merge, 4000, axis=0)  # 38 entries (rows)
 # count = 0
