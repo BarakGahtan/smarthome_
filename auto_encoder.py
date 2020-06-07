@@ -15,21 +15,21 @@ class EncoderCNN(nn.Module):
         modules.append(torch.nn.BatchNorm1d(128))
         modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
         modules.append(nn.Conv1d(128, 256, kernel_size=2, stride=1, padding=1))
-        modules.append(torch.nn.BatchNorm2d(256))
+        modules.append(torch.nn.BatchNorm1d(256))
         modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
         modules.append(nn.Conv1d(256, 512, kernel_size=2, stride=1, padding=1))
         modules.append(torch.nn.BatchNorm1d(512))
         modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
         modules.append(nn.Conv1d(512, out_channels, kernel_size=2, stride=1, padding=1))
         modules.append(torch.nn.BatchNorm1d(out_channels)) #1024 x 314( stride 1 minus 2 and approx 307-310)
-        self.cnn = nn.Sequential(*modules)
+        self.cnn = nn.Sequential(*modules).double() #נbarak change (double)
 
     def forward(self, x):
         return self.cnn(x)
 
 
 class DecoderCNN(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels=1024, out_channels=1):
         super().__init__()
         modules = []
         modules.append(torch.nn.ReLU(inplace=True))
@@ -46,8 +46,8 @@ class DecoderCNN(nn.Module):
         modules.append(nn.ConvTranspose1d(128, 64, kernel_size=2, stride=1, padding=1))
         modules.append(torch.nn.ReLU(inplace=True))
         modules.append(torch.nn.BatchNorm1d(64))
-        modules.append(nn.ConvTranspose1d(64, out_channels, kernel_size=2, stride=1, padding=1, output_padding=1))
-        self.cnn = nn.Sequential(*modules)
+        modules.append(nn.ConvTranspose1d(64, out_channels, kernel_size=2, stride=1, padding=1, output_padding=0))
+        self.cnn = nn.Sequential(*modules).double()
 
     def forward(self, h):
         # Tanh to scale to [-1, 1] (same dynamic range as original images).
@@ -71,7 +71,6 @@ class VAE(nn.Module):
 
         self.features_shape, n_features = self._check_features(in_size)
 
-        # TODO: Add more layers as needed for encode() and decode().
         # ====== YOUR CODE: ======
         self.fc_mean = torch.nn.Linear(n_features, self.z_dim)
         self.fc_log_variance = torch.nn.Linear(n_features, self.z_dim)
@@ -82,7 +81,7 @@ class VAE(nn.Module):
         device = next(self.parameters()).device
         with torch.no_grad():
             # Make sure encoder and decoder are compatible
-            x = torch.randn(1, *in_size, device=device)
+            x = torch.randn(1, 314)
             h = self.features_encoder(x)
             xr = self.features_decoder(h)
             assert xr.shape == x.shape
@@ -103,6 +102,7 @@ class VAE(nn.Module):
         log_sigma2 = self.fc_log_variance(h)
         u = torch.normal(torch.zeros_like(mu))
         z = mu + u.mul(log_sigma2.exp())
+        z = z.double() #נbarak change
         # ========================
 
         return z, mu, log_sigma2
@@ -117,7 +117,6 @@ class VAE(nn.Module):
         h_r = h.view(-1, *self.features_shape)
         x_rec = self.features_decoder(h_r)
         # ========================
-
         # Scale to [-1, 1] (same dynamic range as original images).
         return torch.tanh(x_rec)
 
