@@ -202,8 +202,8 @@ def make_1D_array_per_one_aux_sensor(list): #recieves a list of list.
         avg = len(list)
     D1_arrays_aux_sensor = []
     for i in range(len(list)):
-        D1_arrays_aux_sensor.append(prefix_sum(list[i], int(np.ceil(avg))))
-
+        D1_arrays_aux_sensor.append(prefix_sum(list[i], int(np.ceil(314))))
+    return D1_arrays_aux_sensor
 
 def return_data():
     D1_arrays_aux_sensor_1 = make_1D_array_per_one_aux_sensor(array_list_aux_1_numpy)

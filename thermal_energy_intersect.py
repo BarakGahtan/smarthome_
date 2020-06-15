@@ -297,6 +297,9 @@ def return_data():
         D1_arrays_thermal.append(prefix_sum(list_mat_thermal[i], int(np.ceil(avg))))
 
     return D1_arrays_energy, D1_arrays_thermal
+
+
+
     #max(list_mat_energy[3][:,0])- min(list_mat_energy[3][:,0])
     # tensor_list_thermal_padded, thermal_max= pad_tensor_list(tensor_list_thermal)
     # tensor_list_energy_padded, energy_max = pad_tensor_list(tensor_list_energy)

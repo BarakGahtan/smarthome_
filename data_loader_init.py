@@ -236,8 +236,6 @@ def read_data_seven_coloums_management_actuator(given_path):
 
     return np.asarray(database)
 
-
-
 def renomve_null_subtruct_min_sort(matrix):
     indices_alarm_aux_merge = []
     rows = matrix.shape[0]

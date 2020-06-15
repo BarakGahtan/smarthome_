@@ -68,19 +68,16 @@ class VAE(nn.Module):
         self.features_encoder = features_encoder
         self.features_decoder = features_decoder
         self.z_dim = z_dim
-
         self.features_shape, n_features = self._check_features(in_size)
-
-        # ====== YOUR CODE: ======
         self.fc_mean = torch.nn.Linear(n_features, self.z_dim)
         self.fc_log_variance = torch.nn.Linear(n_features, self.z_dim)
         self.fc_z_dim_backTo_n_features = torch.nn.Linear(self.z_dim, n_features)
-        # ========================
+
 
     def _check_features(self, in_size):
         device = next(self.parameters()).device
         with torch.no_grad():
-            # Make sure encoder and decoder are compatible
+            # we make sure encoder and decoder are compatible
             x = torch.randn(1, 314)
             h = self.features_encoder(x)
             xr = self.features_decoder(h)
@@ -90,33 +87,25 @@ class VAE(nn.Module):
 
 #each input x is 1x314
     def encode(self, x):
-        # TODO:
         #  Sample a latent vector z given an input x from the posterior q(Z|x).
-        #  1. Use the features extracted from the input to obtain mu and
-        #     log_sigma2 (mean and log variance) of q(Z|x).
-        #  2. Apply the reparametrization trick to obtain z.
-        # ====== YOUR CODE: ======
+        #  Use the features extracted from the input to obtain mu and log_sigma2 (mean and log variance) of q(Z|x).
+        #  Apply the reparametrization trick to obtain z.
         h = self.features_encoder(x)
-        h = h.reshape((h.shape[0], -1))
+        # h = h.reshape((h.shape[0], -1))
         mu = self.fc_mean(h)
         log_sigma2 = self.fc_log_variance(h)
         u = torch.normal(torch.zeros_like(mu))
         z = mu + u.mul(log_sigma2.exp())
         z = z.double() #נbarak change
-        # ========================
-
         return z, mu, log_sigma2
 
     def decode(self, z):
-        # TODO:
-        #  Convert a latent vector back into a reconstructed input.
-        #  1. Convert latent z to features h with a linear layer.
-        #  2. Apply features decoder.
-        # ====== YOUR CODE: ======
+        # Convert a latent vector back into a reconstructed input.
+        # Convert latent z to features h with a linear layer.
+        # Apply features decoder.
         h = self.fc_z_dim_backTo_n_features(z)
         h_r = h.view(-1, *self.features_shape)
         x_rec = self.features_decoder(h_r)
-        # ========================
         # Scale to [-1, 1] (same dynamic range as original images).
         return torch.tanh(x_rec)
 
@@ -124,18 +113,12 @@ class VAE(nn.Module):
         samples = []
         device = next(self.parameters()).device
         with torch.no_grad():
-            # TODO:
             #  Sample from the model.
-            #  Generate n latent space samples and return their
-            #  reconstructions.
-            #  Remember that this mean using the model for inference.
-            #  Also note that we're ignoring the sigma2 parameter here.
+            #  Generate n latent space samples and return their reconstructions.
             #  Instead of sampling from N(psi(z), sigma2 I), we'll just take
             #  the mean, i.e. psi(z).
-            # ====== YOUR CODE: ======
             latent_space_samples = torch.randn(n, self.z_dim).to(device)
             samples = self.decode(latent_space_samples).cpu()
-            # ========================
         return samples
 
     def forward(self, x):#4,314 batch, first dim of data,, 314
@@ -163,7 +146,5 @@ def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
     kldiv_loss = (z_sigma2 + z_mu.pow(2) - 1 - z_log_sigma2).sum(dim=1)
     kldiv_loss = torch.mean(kldiv_loss)
     loss = data_loss + kldiv_loss
-    # ========================
-
     return loss, data_loss, kldiv_loss
 
