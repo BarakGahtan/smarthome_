@@ -6,15 +6,15 @@ import auto_encoder
 
 class EnergyDataset(Dataset):
     def __init__(self):
-        self.D1_arrays_energy, self.D1_arrays_thermal = thermal_energy_loader.return_data()
+        self.data = thermal_energy_loader.return_data(1)
 
     def __len__(self):
-        return len(self.D1_arrays_energy)
+        return len(self.data)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        sample = np.expand_dims(self.D1_arrays_energy[idx], axis=0)
+        sample = np.expand_dims(self.data[idx], axis=0)
         return sample
         # if torch.is_tensor(idx):
         #     idx = idx.tolist()
@@ -25,8 +25,7 @@ class EnergyDataset(Dataset):
 
 class ThermalDataset(Dataset):
     def __init__(self):
-        self.D1_arrays_energy, self.D1_arrays_thermal = thermal_energy_loader.return_data()
-
+        self.data_thermal = thermal_energy_loader.return_data(0)
     def __len__(self):
         # return len(self.D1_arrays_energy)
         return len(self.D1_arrays_thermal)
@@ -50,7 +49,7 @@ class data_prep_Energy():
         return self.data_loader_train_energy, self.data_loader_test_energy
 
     def returnDSEnergy(self):
-        dataloader = DataLoader(self.energy_ds,batch_size=1, shuffle=True)
+        dataloader = DataLoader(self.energy_ds,batch_size=4, shuffle=True)
         return dataloader
 
 class data_prep_Thermal():
@@ -66,7 +65,7 @@ class data_prep_Thermal():
         return self.data_loader_train_thermal, self.data_loader_test_thermal
 
     def returnDSThermal(self):
-        dataloader = DataLoader(self.thermal_ds,batch_size=1, shuffle=True)
+        dataloader = DataLoader(self.thermal_ds,batch_size=4, shuffle=True)
         return dataloader
 
     # dl_sample = next(iter(dl))
@@ -81,3 +80,9 @@ class data_prep_Thermal():
     #
     # print(enc_feedforward)
     # print(decoded)
+
+
+dp_energy = data_prep_Energy()
+x=5
+# dp_thermal = data_prep_Thermal()
+# dp_aux = data_prep_Aux()

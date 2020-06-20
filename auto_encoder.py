@@ -78,7 +78,7 @@ class VAE(nn.Module):
         device = next(self.parameters()).device
         with torch.no_grad():
             # we make sure encoder and decoder are compatible
-            x = torch.randn(1, 314)
+            x = torch.randn(1, *in_size, device=device,dtype=torch.double)
             h = self.features_encoder(x)
             xr = self.features_decoder(h)
             assert xr.shape == x.shape
@@ -96,7 +96,7 @@ class VAE(nn.Module):
         log_sigma2 = self.fc_log_variance(h)
         u = torch.normal(torch.zeros_like(mu))
         z = mu + u.mul(log_sigma2.exp())
-        z = z.double() #נbarak change
+        z = z.double() #נbarak chang
         return z, mu, log_sigma2
 
     def decode(self, z):

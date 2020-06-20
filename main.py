@@ -1,13 +1,24 @@
-import dp as dp
-import numpy as np
+import os
+
+from scipy.constants import hp
+
+from auto_encoder import vae_loss
+import torch
 import torch.optim as optim
 from torch.nn import DataParallel
-
+from torch.utils.data import DataLoader
+from torch.utils.data import random_split
 import auto_encoder
 import auto_encoder as autoencoder
-from data_prep_aux import data_prep_aux as data_prep_Aux
-from data_prep_therma_energy import data_prep_Energy, data_prep_Thermal
+import main_data as dataLoader
+from cs236781 import plot
 from training import VAETrainer
+import IPython.display
+import matplotlib.pyplot as plt
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('Using device:', device)
 
 VECTOR_LENGTH = 86400
 def vae_hyperparams():
@@ -24,7 +35,7 @@ def vae_hyperparams():
     hypers['betas'] = (0.85, 0.999)
     return hypers
 
-# Hyperparams
+# # Hyperparams
 hp = vae_hyperparams()
 batch_size = hp['batch_size']
 h_dim = hp['h_dim']
@@ -33,39 +44,27 @@ x_sigma2 = hp['x_sigma2']
 learn_rate = hp['learn_rate']
 betas = hp['betas']
 
-# Data
-dp_energy = data_prep_Energy()
-dp_thermal = data_prep_Thermal()
-dp_aux = data_prep_Aux()
-aux_data = dp_aux.returnDSAux()
-thermal_data = dp_thermal.returnDSThermal()
-energy_data = dp_energy.returnDSEnergy()
-total_data = energy_data.D1_arrays_energy[0]
-for i in range(1,len(energy_data.D1_arrays_energy)):
-    total_data = np.append(total_data,energy_data.D1_arrays_energy[i])
-for i in range(1,len(energy_data.D1_arrays_thermal)):
-    total_data = np.append(total_data,energy_data.D1_arrays_thermal[i])
-for i in range(0,len(aux_data)):
-    total_data = np.append(total_data,aux_data[i],axis=0)
+##z is the output of the encoder
 
-x=5
-
-energy_train, energy_test = dp.getEnergy()
-dl_sample = next(iter(energy_train))
-print(dl_sample)  # Now the shape is 4,1,314
-
+#Data
+data = dataLoader.DatasetCombined()
+x0 = data[0]
+split_lengths = [int(len(data)*0.6), int(len(data)*0.4)]
+ds_train, ds_test = random_split(data, split_lengths)
+dl_train = DataLoader(ds_train, batch_size=4, shuffle=True)
+dl_test = DataLoader(ds_test, batch_size=4, shuffle=True)
+raw_sample = torch.from_numpy(x0).float().to(device)
+dataload_sample = next(iter(dl_train))
+# print(dl_sample)  # Now the shape is 4,1,314
+# dl_sample = next(iter(ds))
 
 # Model
-enc = auto_encoder.EncoderCNN()
-dec = auto_encoder.DecoderCNN()
-enc_feedforward = enc(dl_sample) # shape is 4,1024,319
-decoded = dec(enc_feedforward) #shape is 4,1,314
-print(enc_feedforward)
+encoder = auto_encoder.EncoderCNN()
+decoder = auto_encoder.DecoderCNN()
 
-
-vae = autoencoder.VAE(enc, dec, 1, z_dim)
+vae = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
 vae_dp = DataParallel(vae)
-
+z, mu, log_sigma2 = vae.encode(x0)
 # Optimizer
 optimizer = optim.Adam(vae.parameters(), lr=learn_rate, betas=betas)
 
@@ -75,3 +74,54 @@ def loss_fn(x, xr, z_mu, z_log_sigma2):
 
 # Trainer
 trainer = VAETrainer(vae_dp, loss_fn, optimizer, device)
+
+
+
+torch.manual_seed(42)
+
+
+def test_vae_loss():
+    # Test data
+    N, C, H, W = 10, 3, 64, 64 #TODO: figure out the parameters
+    z_dim = 32 #TODO: figure out the parameters
+    x = torch.randn(N, C, H, W) * 2 - 1
+    xr = torch.randn(N, C, H, W) * 2 - 1
+    z_mu = torch.randn(N, z_dim)
+    z_log_sigma2 = torch.randn(N, z_dim)
+    x_sigma2 = 0.9
+    loss, _, _ = vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
+    return loss
+
+test_vae_loss()
+
+checkpoint_file = 'checkpoints/vae'
+checkpoint_file_final = f'{checkpoint_file}_final'
+if os.path.isfile(f'{checkpoint_file}.pt'):
+    os.remove(f'{checkpoint_file}.pt')
+
+# Show model and hypers
+print(vae)
+print(hp)
+
+def post_epoch_fn(epoch, train_result, test_result, verbose):
+    # Plot some samples if this is a verbose epoch
+    if verbose:
+        samples = vae.sample(n=5)
+        fig, _ = plot.tensors_as_images(samples, figsize=(6, 2))
+        IPython.display.display(fig)
+        plt.close(fig)
+
+
+if os.path.isfile(f'{checkpoint_file_final}.pt'):
+    print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
+    checkpoint_file = checkpoint_file_final
+else:
+    res = trainer.fit(dl_train, dl_test,
+                      num_epochs=200, early_stopping=20, print_every=10,
+                      checkpoints=checkpoint_file,
+                      post_epoch_fn=post_epoch_fn)
+
+
+# enc_feedforward = enc(dl_sample) # shape is 4,1024,319
+# decoded = dec(enc_feedforward) #shape is 4,1,314
+# print(enc_feedforward)

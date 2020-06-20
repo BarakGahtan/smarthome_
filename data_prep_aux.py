@@ -40,6 +40,10 @@ class data_prep_aux():
         return self.data_loader_train_aux, self.data_loader_test_aux
 
     def returnDSAux(self):
-        dataloader = DataLoader(self.aux_ds,batch_size=1, shuffle=True)
+        dataloader = DataLoader(self.aux_ds,batch_size=4, shuffle=True)
         return dataloader
 
+
+
+aux = data_prep_aux()
+x=5

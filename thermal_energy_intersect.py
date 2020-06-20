@@ -282,7 +282,7 @@ def prefix_sum(data, legnth):
 
 
 
-def return_data():
+def return_data(isEnergy):
     list_mat_thermal, list_mat_energy, tensor_list_thermal, tensor_list_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
     thermal_probe_merge_sorted)
     avg = 0
@@ -295,8 +295,11 @@ def return_data():
     D1_arrays_thermal = []
     for i in range(len(list_mat_energy)):
         D1_arrays_thermal.append(prefix_sum(list_mat_thermal[i], int(np.ceil(avg))))
+    if isEnergy == 1:
+        return D1_arrays_energy
+    else:
+        return D1_arrays_thermal
 
-    return D1_arrays_energy, D1_arrays_thermal
 
 
 

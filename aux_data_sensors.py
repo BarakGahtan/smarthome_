@@ -225,7 +225,11 @@ def return_data():
     result_list.append(D1_arrays_aux_sensor_7)
     result_list.append(D1_arrays_aux_sensor_8)
     result_list.append(D1_arrays_aux_sensor_9)
-    return result_list
+    merge_list = []
+    for current_list in result_list:
+        for j in range(len(current_list)):
+            merge_list.append(current_list[j])
+    return merge_list
 
 return_data()
 
