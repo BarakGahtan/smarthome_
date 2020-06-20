@@ -5,20 +5,18 @@ import itertools
 import aux_data_sensors as aux_loader
 import auto_encoder
 import thermal_energy_intersect as thermal_energy_loader
-
+import tensorflow as tf
 def data_wrapper():
     res = []
     aux = aux_loader.return_data()
     thermal = thermal_energy_loader.return_data(0)
     energy = thermal_energy_loader.return_data(1)
     for j in range(len(aux)):
-        res.append(aux[j])
-
+        res.append(tf.convert_to_tensor(aux[j],dtype=tf.float32)) #before it was only insert without conversion
     for j in range(len(thermal)):
-        res.append(thermal[j])
-
+        res.append(tf.convert_to_tensor(thermal[j],dtype=tf.float32))  #before it was only insert without conversion
     for j in range(len(energy)):
-        res.append(energy[j])
+        res.append(tf.convert_to_tensor(energy[j],dtype=tf.float32))  #before it was only insert without conversion
     return res
 
 class DatasetCombined(Dataset):

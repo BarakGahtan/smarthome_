@@ -22,10 +22,10 @@ class EncoderCNN(nn.Module):
         modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
         modules.append(nn.Conv1d(512, out_channels, kernel_size=2, stride=1, padding=1))
         modules.append(torch.nn.BatchNorm1d(out_channels)) #1024 x 314( stride 1 minus 2 and approx 307-310)
-        self.cnn = nn.Sequential(*modules).double() #נbarak change (double)
+        self.cnn = nn.Sequential(*modules)#.double() #נbarak change (double)
 
     def forward(self, x):
-        return self.cnn(x)
+        return self.cnn(x)#.double()
 
 
 class DecoderCNN(nn.Module):
@@ -47,11 +47,11 @@ class DecoderCNN(nn.Module):
         modules.append(torch.nn.ReLU(inplace=True))
         modules.append(torch.nn.BatchNorm1d(64))
         modules.append(nn.ConvTranspose1d(64, out_channels, kernel_size=2, stride=1, padding=1, output_padding=0))
-        self.cnn = nn.Sequential(*modules).double()
+        self.cnn = nn.Sequential(*modules)#.double()
 
     def forward(self, h):
         # Tanh to scale to [-1, 1] (same dynamic range as original images).
-        return torch.tanh(self.cnn(h))
+        return torch.tanh(self.cnn(h))#.double()
 
 
 class VAE(nn.Module):
@@ -78,25 +78,25 @@ class VAE(nn.Module):
         device = next(self.parameters()).device
         with torch.no_grad():
             # we make sure encoder and decoder are compatible
-            x = torch.randn(1, *in_size, device=device,dtype=torch.double)
+            x = torch.randn(1, *in_size, device=device) #,dtype=torch.double
             h = self.features_encoder(x)
             xr = self.features_decoder(h)
             assert xr.shape == x.shape
             # Return the shape and number of encoded features
             return h.shape[1:], torch.numel(h) // h.shape[0]
 
-#each input x is 1x314
+
     def encode(self, x):
         #  Sample a latent vector z given an input x from the posterior q(Z|x).
         #  Use the features extracted from the input to obtain mu and log_sigma2 (mean and log variance) of q(Z|x).
         #  Apply the reparametrization trick to obtain z.
         h = self.features_encoder(x)
-        # h = h.reshape((h.shape[0], -1))
+        h = h.reshape((h.shape[0], -1))
         mu = self.fc_mean(h)
         log_sigma2 = self.fc_log_variance(h)
         u = torch.normal(torch.zeros_like(mu))
         z = mu + u.mul(log_sigma2.exp())
-        z = z.double() #נbarak chang
+        #z = z.double() #barak change
         return z, mu, log_sigma2
 
     def decode(self, z):
@@ -106,8 +106,7 @@ class VAE(nn.Module):
         h = self.fc_z_dim_backTo_n_features(z)
         h_r = h.view(-1, *self.features_shape)
         x_rec = self.features_decoder(h_r)
-        # Scale to [-1, 1] (same dynamic range as original images).
-        return torch.tanh(x_rec)
+        return torch.tanh(x_rec)#.double()# Scale to [-1, 1] (same dynamic range as original images).
 
     def sample(self, n):
         samples = []
@@ -140,7 +139,6 @@ def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
         - The KL divergence loss term
     all three are scalars, averaged over the batch dimension.
     """
-    loss, data_loss, kldiv_loss = None, None, None
     z_sigma2 = torch.exp(z_log_sigma2)
     data_loss = F.mse_loss(x, xr).mul(1 / x_sigma2)
     kldiv_loss = (z_sigma2 + z_mu.pow(2) - 1 - z_log_sigma2).sum(dim=1)

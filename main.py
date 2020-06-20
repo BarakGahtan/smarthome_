@@ -1,7 +1,5 @@
 import os
-
 from scipy.constants import hp
-
 from auto_encoder import vae_loss
 import torch
 import torch.optim as optim
@@ -15,12 +13,10 @@ from cs236781 import plot
 from training import VAETrainer
 import IPython.display
 import matplotlib.pyplot as plt
-
-
+torch.manual_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Using device:', device)
 
-VECTOR_LENGTH = 86400
 def vae_hyperparams():
     hypers = dict(
         batch_size=0,
@@ -44,12 +40,10 @@ x_sigma2 = hp['x_sigma2']
 learn_rate = hp['learn_rate']
 betas = hp['betas']
 
-##z is the output of the encoder
-
 #Data
 data = dataLoader.DatasetCombined()
 x0 = data[0]
-split_lengths = [int(len(data)*0.6), int(len(data)*0.4)]
+split_lengths = [int(len(data)*0.6+1), int(len(data)*0.4)]
 ds_train, ds_test = random_split(data, split_lengths)
 dl_train = DataLoader(ds_train, batch_size=4, shuffle=True)
 dl_test = DataLoader(ds_test, batch_size=4, shuffle=True)
@@ -58,13 +52,22 @@ dataload_sample = next(iter(dl_train))
 # print(dl_sample)  # Now the shape is 4,1,314
 # dl_sample = next(iter(ds))
 
+#raw_sample before dataloader shape is [1,314]
+#dataloader_sample after DataLoader is [4,1,314]
+#encoder_output sample size is [4,1024,319]
+#decoder_output sample size is [4,1,314]
+
+
 # Model
 encoder = auto_encoder.EncoderCNN()
 decoder = auto_encoder.DecoderCNN()
 
-vae = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
+#check per one
+enc_feedforward = encoder(dataload_sample) # shape should be 4,1024,319, should it be z?
+decoded = decoder(enc_feedforward) #shape is 3,1,314 ( back to normal)
+vae = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)#(features_encoder, features_decoder, in_size, z_dim)
 vae_dp = DataParallel(vae)
-z, mu, log_sigma2 = vae.encode(x0)
+z, mu, log_sigma2 = vae.encode(dataload_sample)
 # Optimizer
 optimizer = optim.Adam(vae.parameters(), lr=learn_rate, betas=betas)
 
@@ -74,11 +77,6 @@ def loss_fn(x, xr, z_mu, z_log_sigma2):
 
 # Trainer
 trainer = VAETrainer(vae_dp, loss_fn, optimizer, device)
-
-
-
-torch.manual_seed(42)
-
 
 def test_vae_loss():
     # Test data

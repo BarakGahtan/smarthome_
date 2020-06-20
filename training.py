@@ -12,14 +12,11 @@ from cs236781.train_results import BatchResult, EpochResult, FitResult
 
 class Trainer(abc.ABC):
     """
-    A class abstracting the various tasks of training models.
-
     Provides methods at multiple levels of granularity:
     - Multiple epochs (fit)
     - Single epoch (train_epoch/test_epoch)
     - Single batch (train_batch/test_batch)
     """
-
     def __init__(self, model, loss_fn, optimizer, device='cpu'):
         """
         Initialize the trainer.
@@ -238,17 +235,11 @@ class RNNTrainer(Trainer):
         super().__init__(model, loss_fn, optimizer, device)
  
     def train_epoch(self, dl_train: DataLoader, **kw):
-        # TODO: Implement modifications to the base method, if needed.
-        # ====== YOUR CODE: ======
         self.model.hidden_state = None
-        # ========================
         return super().train_epoch(dl_train, **kw)
  
     def test_epoch(self, dl_test: DataLoader, **kw):
-        # TODO: Implement modifications to the base method, if needed.
-        # ====== YOUR CODE: ======
         self.model.hidden_state = None
-        # ========================
         return super().test_epoch(dl_test, **kw)
  
     def train_batch(self, batch) -> BatchResult:
@@ -256,8 +247,6 @@ class RNNTrainer(Trainer):
         x = x.to(self.device, dtype=torch.float)  # (B,S,V)
         y = y.to(self.device, dtype=torch.long)  # (B,S)
         seq_len = y.shape[1]
- 
-        # TODO: Train the RNN model on one batch of data.
         # - Forward pass
         # - Calculate total loss over sequence
         # - Backward pass (BPTT)
@@ -265,34 +254,23 @@ class RNNTrainer(Trainer):
         # - Calculate number of correct char predictions
         # ====== YOUR CODE: ======
         B, S, V = x.shape
- 
         # Forward pass
         scores, hidden_state = self.model(x, self.model.hidden_state)
- 
         y_pred = torch.argmax(scores, dim=2)
- 
         loss = 0
- 
         for seq in range(B):
             y_scores_seq = scores[seq, :, :]
             y_true_seq = y[seq, :]
             loss += self.loss_fn(y_scores_seq, y_true_seq)
- 
         # Backward pass
         self.optimizer.zero_grad()
         loss.backward(retain_graph=True)
- 
         # Optimization Step
         self.optimizer.step()
- 
         # Correct char predictions
         num_correct = torch.sum(y_pred.eq(y))
-        # ========================
- 
-        # Note: scaling num_correct by seq_len because each sample has seq_len
-        # different predictions.
+        # Note: scaling num_correct by seq_len because each sample has seq_len different predictions.
         return BatchResult(loss.item(), num_correct.item() / seq_len)
- 
     def test_batch(self, batch) -> BatchResult:
         x, y = batch
         x = x.to(self.device, dtype=torch.float)  # (B,S,V)
@@ -300,54 +278,38 @@ class RNNTrainer(Trainer):
         seq_len = y.shape[1]
  
         with torch.no_grad():
-            # TODO: Evaluate the RNN model on one batch of data.
             # - Forward pass
             # - Loss calculation
             # - Calculate number of correct predictions
             # ====== YOUR CODE: ======
             loss = 0
             B, S, V = x.shape
- 
             scores, hidden_state = self.model(x, self.model.hidden_state)
             y_pred = torch.argmax(scores, dim=2)
- 
             for seq in range(B):
                 y_scores_seq = scores[seq, :, :]
                 y_true_seq = y[seq, :]
                 loss += self.loss_fn(y_scores_seq, y_true_seq)
- 
             # Correct char predictions
             num_correct = torch.sum(y_pred.eq(y))
-            # ========================
- 
         return BatchResult(loss.item(), num_correct.item() / seq_len)
  
 class VAETrainer(Trainer):
     def train_batch(self, batch) -> BatchResult:
         x, _ = batch
         x = x.to(self.device)  # Image batch (N,C,H,W)
-        # TODO: Train a VAE on one batch.
-        # ====== YOUR CODE: ======
+        #Train a VAE on one batch.
         xr, z_mu, z_log_sigma2 = self.model(x)
         loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
-        
         self.optimizer.zero_grad()
         loss.backward()
- 
         self.optimizer.step()
-        # ========================
-
         return BatchResult(loss.item(), 1/data_loss.item())
 
     def test_batch(self, batch) -> BatchResult:
         x, _ = batch
         x = x.to(self.device)  # Image batch (N,C,H,W)
-
         with torch.no_grad():
-            # TODO: Evaluate a VAE on one batch.
-            # ====== YOUR CODE: ======
             xr, z_mu, z_log_sigma2 = self.model(x)
             loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
-            # ========================
-
         return BatchResult(loss.item(), 1/data_loss.item())
