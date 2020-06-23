@@ -27,7 +27,7 @@ def vae_hyperparams():
     hypers['h_dim'] = 128
     hypers['z_dim'] = 64
     hypers['x_sigma2'] = 0.001
-    hypers['learn_rate'] = 0.001
+    hypers['learn_rate'] = 0.00001
     hypers['betas'] = (0.85, 0.999)
     return hypers
 
@@ -81,16 +81,18 @@ trainer = VAETrainer(vae_dp, loss_fn, optimizer, device)
 def test_vae_loss():
     # Test data
     N, C, H, W = 10, 3, 64, 64 #TODO: figure out the parameters
-    z_dim = 32 #TODO: figure out the parameters
-    x = torch.randn(N, C, H, W) * 2 - 1
-    xr = torch.randn(N, C, H, W) * 2 - 1
+    z_dim = 1 #TODO: figure out the parameters
+    # x = torch.randn(N, C, H, W) * 2 - 1
+    x  = torch.randn(1, *raw_sample.shape)
+    # xr = torch.randn(N, C, H, W) * 2 - 1
+    xr = self.features_decoder(h)
     z_mu = torch.randn(N, z_dim)
     z_log_sigma2 = torch.randn(N, z_dim)
     x_sigma2 = 0.9
     loss, _, _ = vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
     return loss
 
-test_vae_loss()
+# test_vae_loss()
 
 checkpoint_file = 'checkpoints/vae'
 checkpoint_file_final = f'{checkpoint_file}_final'

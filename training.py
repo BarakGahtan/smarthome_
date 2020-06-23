@@ -75,14 +75,6 @@ class Trainer(abc.ABC):
             if epoch % print_every == 0 or epoch == num_epochs - 1:
                 verbose = True
             self._print(f'--- EPOCH {epoch+1}/{num_epochs} ---', verbose)
-
-            # TODO:
-            #  Train & evaluate for one epoch
-            #  - Use the train/test_epoch methods.
-            #  - Save losses and accuracies in the lists above.
-            #  - Implement early stopping. This is a very useful and
-            #    simple regularization technique that is highly recommended.
-            # ====== YOUR CODE: ======
             # Train
             train_result = self.train_epoch(dl_train, **kw)
             test_result = self.test_epoch(dl_test, **kw)
@@ -252,7 +244,6 @@ class RNNTrainer(Trainer):
         # - Backward pass (BPTT)
         # - Update params
         # - Calculate number of correct char predictions
-        # ====== YOUR CODE: ======
         B, S, V = x.shape
         # Forward pass
         scores, hidden_state = self.model(x, self.model.hidden_state)
@@ -276,12 +267,10 @@ class RNNTrainer(Trainer):
         x = x.to(self.device, dtype=torch.float)  # (B,S,V)
         y = y.to(self.device, dtype=torch.long)  # (B,S)
         seq_len = y.shape[1]
- 
         with torch.no_grad():
             # - Forward pass
             # - Loss calculation
             # - Calculate number of correct predictions
-            # ====== YOUR CODE: ======
             loss = 0
             B, S, V = x.shape
             scores, hidden_state = self.model(x, self.model.hidden_state)
@@ -290,13 +279,12 @@ class RNNTrainer(Trainer):
                 y_scores_seq = scores[seq, :, :]
                 y_true_seq = y[seq, :]
                 loss += self.loss_fn(y_scores_seq, y_true_seq)
-            # Correct char predictions
             num_correct = torch.sum(y_pred.eq(y))
         return BatchResult(loss.item(), num_correct.item() / seq_len)
  
 class VAETrainer(Trainer):
     def train_batch(self, batch) -> BatchResult:
-        x, _ = batch
+        x = batch
         x = x.to(self.device)  # Image batch (N,C,H,W)
         #Train a VAE on one batch.
         xr, z_mu, z_log_sigma2 = self.model(x)
@@ -307,7 +295,7 @@ class VAETrainer(Trainer):
         return BatchResult(loss.item(), 1/data_loss.item())
 
     def test_batch(self, batch) -> BatchResult:
-        x, _ = batch
+        x = batch
         x = x.to(self.device)  # Image batch (N,C,H,W)
         with torch.no_grad():
             xr, z_mu, z_log_sigma2 = self.model(x)
