@@ -1,6 +1,6 @@
 import os
-from scipy.constants import hp
-from auto_encoder import vae_loss
+from auto_encoder import vae_loss_mse
+from auto_encoder import vae_loss_CE
 import torch
 import torch.optim as optim
 from torch.nn import DataParallel
@@ -72,11 +72,15 @@ z, mu, log_sigma2 = vae.encode(dataload_sample)
 optimizer = optim.Adam(vae.parameters(), lr=learn_rate, betas=betas)
 
 # Loss
-def loss_fn(x, xr, z_mu, z_log_sigma2):
-    return autoencoder.vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
+def loss_fn_mse(x, xr, z_mu, z_log_sigma2):
+    return autoencoder.vae_loss_mse(x, xr, z_mu, z_log_sigma2, x_sigma2)
+
+def loss_fn_CE(x, xr, z_mu, z_log_sigma2):
+    return autoencoder.vae_loss_CE(x, xr, z_mu, z_log_sigma2, x_sigma2)
 
 # Trainer
-trainer = VAETrainer(vae_dp, loss_fn, optimizer, device)
+trainer_mse = VAETrainer(vae_dp, loss_fn_mse, optimizer, device)
+trainer_CE = VAETrainer(vae_dp, loss_fn_CE, optimizer, device)
 
 def test_vae_loss():
     # Test data
@@ -116,8 +120,12 @@ if os.path.isfile(f'{checkpoint_file_final}.pt'):
     print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
     checkpoint_file = checkpoint_file_final
 else:
-    res = trainer.fit(dl_train, dl_test,
-                      num_epochs=200, early_stopping=20, print_every=10,
+    # res = trainer_mse.fit(dl_train, dl_test,
+    #                   num_epochs=5, early_stopping=20, print_every=10,
+    #                   checkpoints=checkpoint_file,
+    #                   post_epoch_fn=post_epoch_fn)
+    res = trainer_CE.fit(dl_train, dl_test,
+                      num_epochs=5, early_stopping=20, print_every=10,
                       checkpoints=checkpoint_file,
                       post_epoch_fn=post_epoch_fn)
 

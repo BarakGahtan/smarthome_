@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from keras import objectives, backend as K
 
 class EncoderCNN(nn.Module):
     def __init__(self, in_channels=1, out_channels = 1024):
@@ -125,7 +125,7 @@ class VAE(nn.Module):
         return self.decode(z), mu, log_sigma2
 
 
-def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
+def vae_loss_mse(x, xr, z_mu, z_log_sigma2, x_sigma2):
     """
     Point-wise loss function of a VAE with latent space of dimension z_dim.
     :param x: Input image batch of shape (N,C,H,W).
@@ -143,6 +143,16 @@ def vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2):
     data_loss = F.mse_loss(x, xr).mul(1 / x_sigma2)
     kldiv_loss = (z_sigma2 + z_mu.pow(2) - 1 - z_log_sigma2).sum(dim=1)
     kldiv_loss = torch.mean(kldiv_loss)
+    loss = data_loss + kldiv_loss
+    return loss, data_loss, kldiv_loss
+
+
+def vae_loss_CE(x, x_decoded_mean,z_mu, z_log_sigma2, x_sigma2):
+    z_sigma2 = torch.exp(z_log_sigma2)
+    kldiv_loss = (z_sigma2 + z_mu.pow(2) - 1 - z_log_sigma2).sum(dim=1)
+    kldiv_loss = torch.mean(kldiv_loss)
+    data_loss = len(x) * torch.nn.functional.binary_cross_entropy_with_logits(x_decoded_mean,x ) #was instead of len(x) was max_length, but my size is always 4x1x314
+    # kl_loss = - 0.5 * torch.mean(1 + z_log_sigma2 - torch.sqrt(z_mu) - torch.exp(z_log_sigma2), axis=-1)
     loss = data_loss + kldiv_loss
     return loss, data_loss, kldiv_loss
 

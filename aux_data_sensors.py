@@ -133,29 +133,29 @@ for i in range(list_count_max):
     array_list_aux_1[i].append([x for x in alarm_aux_channel_1_updated if (i + 1) * week > x[0] >= i * week])
     array_list_aux_1_numpy[i] = (np.concatenate(np.asarray(array_list_aux_1[i]), axis=0))
 
-    # array_list_aux_2[i].append([x for x in alarm_aux_channel_2_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_2_numpy[i] = (np.concatenate(np.asarray(array_list_aux_2[i]), axis=0))
-    #
-    # array_list_aux_3[i].append([x for x in alarm_aux_channel_3_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_3_numpy[i] = (np.concatenate(np.asarray(array_list_aux_3[i]), axis=0))
+    array_list_aux_2[i].append([x for x in alarm_aux_channel_2_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_2_numpy[i] = (np.concatenate(np.asarray(array_list_aux_2[i]), axis=0))
 
-    # array_list_aux_4[i].append([x for x in alarm_aux_channel_2_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_4_numpy[i] = (np.concatenate(np.asarray(array_list_aux_4[i]), axis=0))
-    #
-    # array_list_aux_5[i].append([x for x in alarm_aux_channel_5_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_5_numpy[i] = (np.concatenate(np.asarray(array_list_aux_5[i]), axis=0))
-    #
-    # array_list_aux_6[i].append([x for x in alarm_aux_channel_6_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_6_numpy[i] = (np.concatenate(np.asarray(array_list_aux_6[i]), axis=0))
-    #
-    # array_list_aux_7[i].append([x for x in alarm_aux_channel_7_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_7_numpy[i] = (np.concatenate(np.asarray(array_list_aux_7[i]), axis=0))
-    #
-    # array_list_aux_8[i].append([x for x in alarm_aux_channel_8_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_8_numpy[i] = (np.concatenate(np.asarray(array_list_aux_8[i]), axis=0))
-    #
-    # array_list_aux_9[i].append([x for x in alarm_aux_channel_9_updated if (i + 1) * week > x[0] >= i * week])
-    # array_list_aux_9_numpy[i] = (np.concatenate(np.asarray(array_list_aux_9[i]), axis=0))
+    array_list_aux_3[i].append([x for x in alarm_aux_channel_3_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_3_numpy[i] = (np.concatenate(np.asarray(array_list_aux_3[i]), axis=0))
+
+    array_list_aux_4[i].append([x for x in alarm_aux_channel_2_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_4_numpy[i] = (np.concatenate(np.asarray(array_list_aux_4[i]), axis=0))
+
+    array_list_aux_5[i].append([x for x in alarm_aux_channel_5_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_5_numpy[i] = (np.concatenate(np.asarray(array_list_aux_5[i]), axis=0))
+
+    array_list_aux_6[i].append([x for x in alarm_aux_channel_6_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_6_numpy[i] = (np.concatenate(np.asarray(array_list_aux_6[i]), axis=0))
+
+    array_list_aux_7[i].append([x for x in alarm_aux_channel_7_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_7_numpy[i] = (np.concatenate(np.asarray(array_list_aux_7[i]), axis=0))
+
+    array_list_aux_8[i].append([x for x in alarm_aux_channel_8_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_8_numpy[i] = (np.concatenate(np.asarray(array_list_aux_8[i]), axis=0))
+
+    array_list_aux_9[i].append([x for x in alarm_aux_channel_9_updated if (i + 1) * week > x[0] >= i * week])
+    array_list_aux_9_numpy[i] = (np.concatenate(np.asarray(array_list_aux_9[i]), axis=0))
 
 
 def prefix_sum(data, legnth):
