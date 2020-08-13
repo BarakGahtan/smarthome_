@@ -1,11 +1,11 @@
-import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader, random_split
-import itertools
-import aux_data_sensors as aux_loader
-import auto_encoder
-import thermal_energy_intersect as thermal_energy_loader
 import tensorflow as tf
+import torch
+from torch.utils.data import Dataset
+import aux_data_sensors as aux_loader
+import thermal_energy_intersect as thermal_energy_loader
+
+
 def data_wrapper():
     res = []
     aux = aux_loader.return_data()

@@ -1,6 +1,6 @@
 import os
-from auto_encoder import vae_loss_mse
-from auto_encoder import vae_loss_CE
+import IPython.display
+import matplotlib.pyplot as plt
 import torch
 import torch.optim as optim
 from torch.nn import DataParallel
@@ -11,8 +11,6 @@ import auto_encoder as autoencoder
 import main_data as dataLoader
 from cs236781 import plot
 from training import VAETrainer
-import IPython.display
-import matplotlib.pyplot as plt
 torch.manual_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('Using device:', device)
@@ -82,19 +80,7 @@ def loss_fn_CE(x, xr, z_mu, z_log_sigma2):
 trainer_mse = VAETrainer(vae_dp, loss_fn_mse, optimizer, device)
 trainer_CE = VAETrainer(vae_dp, loss_fn_CE, optimizer, device)
 
-def test_vae_loss():
-    # Test data
-    N, C, H, W = 10, 3, 64, 64 #TODO: figure out the parameters
-    z_dim = 1 #TODO: figure out the parameters
-    # x = torch.randn(N, C, H, W) * 2 - 1
-    x  = torch.randn(1, *raw_sample.shape)
-    # xr = torch.randn(N, C, H, W) * 2 - 1
-    xr = self.features_decoder(h)
-    z_mu = torch.randn(N, z_dim)
-    z_log_sigma2 = torch.randn(N, z_dim)
-    x_sigma2 = 0.9
-    loss, _, _ = vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
-    return loss
+#
 
 # test_vae_loss()
 
@@ -120,10 +106,10 @@ if os.path.isfile(f'{checkpoint_file_final}.pt'):
     print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
     checkpoint_file = checkpoint_file_final
 else:
-    # res = trainer_mse.fit(dl_train, dl_test,
-    #                   num_epochs=5, early_stopping=20, print_every=10,
-    #                   checkpoints=checkpoint_file,
-    #                   post_epoch_fn=post_epoch_fn)
+    res = trainer_mse.fit(dl_train, dl_test,
+                      num_epochs=5, early_stopping=20, print_every=10,
+                      checkpoints=checkpoint_file,
+                      post_epoch_fn=post_epoch_fn)
     res = trainer_CE.fit(dl_train, dl_test,
                       num_epochs=5, early_stopping=20, print_every=10,
                       checkpoints=checkpoint_file,
@@ -133,3 +119,19 @@ else:
 # enc_feedforward = enc(dl_sample) # shape is 4,1024,319
 # decoded = dec(enc_feedforward) #shape is 4,1,314
 # print(enc_feedforward)
+
+
+
+# def test_vae_loss():
+#     # Test data
+#     N, C, H, W = 10, 3, 64, 64 #TODO: figure out the parameters
+#     z_dim = 1 #TODO: figure out the parameters
+#     # x = torch.randn(N, C, H, W) * 2 - 1
+#     x  = torch.randn(1, *raw_sample.shape)
+#     # xr = torch.randn(N, C, H, W) * 2 - 1
+#     xr = self.features_decoder(h)
+#     z_mu = torch.randn(N, z_dim)
+#     z_log_sigma2 = torch.randn(N, z_dim)
+#     x_sigma2 = 0.9
+#     loss, _, _ = vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
+#     return loss

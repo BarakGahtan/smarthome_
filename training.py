@@ -3,7 +3,6 @@ import os
 import sys
 import tqdm
 import torch
-
 from torch.utils.data import DataLoader
 from typing import Callable, Any
 from pathlib import Path
