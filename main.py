@@ -63,14 +63,14 @@ dl_test_energy = DataLoader(ds_test_energy, batch_size=4, shuffle=True)
 
 # 4 - thermal and aux
 data_thermal_aux = dataLoader.DatasetCombined(4)
-split_lengths_thermal_aux = [int(len(data_thermal_aux)*0.6+1), int(len(data_thermal_aux)*0.4)]
+split_lengths_thermal_aux = [int(len(data_thermal_aux)*0.6), int(len(data_thermal_aux)*0.4)]
 ds_train_thermal_aux, ds_test_thermal_aux = random_split(data_thermal_aux, split_lengths_thermal_aux)
 dl_train_thermal_aux = DataLoader(ds_train_thermal_aux, batch_size=4, shuffle=True)
 dl_test_thermal_aux = DataLoader(ds_test_thermal_aux, batch_size=4, shuffle=True)
 
 # 5 - energy and aux
 data_energy_aux = dataLoader.DatasetCombined(5)
-split_lengths_energy_aux = [int(len(data_energy_aux)*0.6+1), int(len(data_energy_aux)*0.4)]
+split_lengths_energy_aux = [int(len(data_energy_aux)*0.6), int(len(data_energy_aux)*0.4)]
 ds_train_energy_aux, ds_test_energy_aux = random_split(data_energy_aux, split_lengths_energy_aux)
 dl_train_energy_aux = DataLoader(ds_train_energy_aux, batch_size=4, shuffle=True)
 dl_test_energy_aux = DataLoader(ds_test_energy_aux, batch_size=4, shuffle=True)
@@ -108,12 +108,12 @@ decoder = auto_encoder.DecoderCNN()
 
 
 #Data
-data = dataLoader.DatasetCombined()
+data = dataLoader.DatasetCombined(7)
 x0 = data[0]
 split_lengths = [int(len(data)*0.6+1), int(len(data)*0.4)]
-ds_train, ds_test = random_split(data, split_lengths)
-dl_train = DataLoader(ds_train, batch_size=4, shuffle=True)
-dl_test = DataLoader(ds_test, batch_size=4, shuffle=True)
+ds_train_x, ds_test_x = random_split(data, split_lengths)
+dl_train = DataLoader(ds_train_x, batch_size=4, shuffle=True)
+dl_test = DataLoader(ds_test_x, batch_size=4, shuffle=True)
 raw_sample = torch.from_numpy(x0).float().to(device)
 dataload_sample = next(iter(dl_train))
 # print(dl_sample)  # Now the shape is 4,1,314
@@ -130,11 +130,11 @@ encoder = auto_encoder.EncoderCNN()
 decoder = auto_encoder.DecoderCNN()
 
 #check per one
-enc_feedforward = encoder(dataload_sample) # shape should be 4,1024,319, should it be z?
-decoded = decoder(enc_feedforward) #shape is 3,1,314 ( back to normal)
+# enc_feedforward = encoder(dataload_sample) # shape should be 4,1024,319, should it be z?
+# decoded = decoder(enc_feedforward) #shape is 3,1,314 ( back to normal)
 vae = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)#(features_encoder, features_decoder, in_size, z_dim)
 vae_dp = DataParallel(vae)
-z, mu, log_sigma2 = vae.encode(dataload_sample)
+# z, mu, log_sigma2 = vae.encode(dataload_sample)
 
 
 # Loss
@@ -168,23 +168,32 @@ if os.path.isfile(f'{checkpoint_file_final}.pt'):
     print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
     checkpoint_file = checkpoint_file_final
 else:
+    fit_results = []
     for i in range(len(list_DL_tuples)):
         if os.path.isfile(f'{checkpoint_file_final}.pt'):
             print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
             current_check_point_file = f'{checkpoint_file_final}_' + str(i)
+        current_check_point_file = f'{checkpoint_file_final}_' + str(i)
         res = trainer_mse.fit(list_DL_tuples[i][0], list_DL_tuples[i][1],
                               num_epochs=200, early_stopping=20, print_every=10,
-                              checkpoints=checkpoint_file,
-                              post_epoch_fn=post_epoch_fn)
+                              checkpoints=current_check_point_file,
+                              post_epoch_fn=None)
+        fit_results.append(res)
 
-    for i in range(len(list_DL_tuples)):
-        if os.path.isfile(f'{checkpoint_file_final}.pt'):
-            print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
-            current_check_point_file = f'{checkpoint_file_final}_' + str(i)
-        res = trainer_CE.fit(list_DL_tuples[i][0], list_DL_tuples[i][1],
-                              num_epochs=200, early_stopping=20, print_every=10,
-                              checkpoints=checkpoint_file,
-                              post_epoch_fn=post_epoch_fn)
+    # with open('fit_results.txt', 'w') as f:
+    #     for i in range(len(fit_results)):
+    #         print("current dataset is: " + str(i))
+    #         f.write("%s\n" % fit_results[i])
+
+
+    # for i in range(len(list_DL_tuples)):
+    #     if os.path.isfile(f'{checkpoint_file_final}.pt'):
+    #         print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
+    #         current_check_point_file = f'{checkpoint_file_final}_' + str(i)
+    #     res = trainer_CE.fit(list_DL_tuples[i][0], list_DL_tuples[i][1],
+    #                           num_epochs=200, early_stopping=20, print_every=10,
+    #                           checkpoints=checkpoint_file,
+    #                           post_epoch_fn=post_epoch_fn)
 
 
 # enc_feedforward = enc(dl_sample) # shape is 4,1024,319

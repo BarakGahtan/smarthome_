@@ -121,8 +121,7 @@ class Trainer(abc.ABC):
         if post_epoch_fn:
                 post_epoch_fn(epoch, train_result, test_result, verbose)
 
-        return FitResult(actual_num_epochs,
-                         train_loss, train_acc, test_loss, test_acc)
+        return FitResult(actual_num_epochs,train_loss, train_acc, test_loss, test_acc)
 
     def train_epoch(self, dl_train: DataLoader, **kw) -> EpochResult:
         """
