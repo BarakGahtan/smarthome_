@@ -39,7 +39,7 @@ x_sigma2 = hp['x_sigma2']
 learn_rate = hp['learn_rate']
 betas = hp['betas']
 
-#preparing different datasets
+# preparing different datasets
 # 1 - aux sensor only
 data_aux = dataLoader.DatasetCombined(1)
 split_lengths_aux = [int(len(data_aux)*0.6+1), int(len(data_aux)*0.4)]
@@ -48,42 +48,42 @@ dl_train_aux = DataLoader(ds_train_aux, batch_size=4, shuffle=True)
 dl_test_aux = DataLoader(ds_test_aux, batch_size=4, shuffle=True)
 
 # 2 - thermal sensor only
-data_thermal = dataLoader.DatasetCombined(2)
+data_thermal,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(2)
 split_lengths_thermal = [int(len(data_thermal)*0.6+1), int(len(data_thermal)*0.4)]
 ds_train_thermal, ds_test_thermal = random_split(data_thermal, split_lengths_thermal)
 dl_train_thermal = DataLoader(ds_train_thermal, batch_size=4, shuffle=True)
 dl_test_thermal = DataLoader(ds_test_thermal, batch_size=4, shuffle=True)
 
 # 3 - energy sensor only
-data_energy = dataLoader.DatasetCombined(3)
+data_energy,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(3)
 split_lengths_energy = [int(len(data_energy)*0.6+1), int(len(data_energy)*0.4)]
 ds_train_energy, ds_test_energy = random_split(data_energy, split_lengths_energy)
 dl_train_energy = DataLoader(ds_train_energy, batch_size=4, shuffle=True)
 dl_test_energy = DataLoader(ds_test_energy, batch_size=4, shuffle=True)
 
 # 4 - thermal and aux
-data_thermal_aux = dataLoader.DatasetCombined(4)
+data_thermal_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(4)
 split_lengths_thermal_aux = [int(len(data_thermal_aux)*0.6), int(len(data_thermal_aux)*0.4)]
 ds_train_thermal_aux, ds_test_thermal_aux = random_split(data_thermal_aux, split_lengths_thermal_aux)
 dl_train_thermal_aux = DataLoader(ds_train_thermal_aux, batch_size=4, shuffle=True)
 dl_test_thermal_aux = DataLoader(ds_test_thermal_aux, batch_size=4, shuffle=True)
 
 # 5 - energy and aux
-data_energy_aux = dataLoader.DatasetCombined(5)
+data_energy_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(5)
 split_lengths_energy_aux = [int(len(data_energy_aux)*0.6), int(len(data_energy_aux)*0.4)]
 ds_train_energy_aux, ds_test_energy_aux = random_split(data_energy_aux, split_lengths_energy_aux)
 dl_train_energy_aux = DataLoader(ds_train_energy_aux, batch_size=4, shuffle=True)
 dl_test_energy_aux = DataLoader(ds_test_energy_aux, batch_size=4, shuffle=True)
 
 # 6 - energy and thermal
-data_energy_thermal = dataLoader.DatasetCombined(6)
+data_energy_thermal,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(6)
 split_lengths_energy_thermal = [int(len(data_energy_thermal)*0.6+1), int(len(data_energy_thermal)*0.4)]
 ds_train_energy_thermal, ds_test_energy_thermal = random_split(data_energy_thermal, split_lengths_energy_thermal)
 dl_train_energy_thermal = DataLoader(ds_train_energy_thermal, batch_size=4, shuffle=True)
 dl_test_energy_thermal = DataLoader(ds_test_energy_thermal, batch_size=4, shuffle=True)
 
 # 7 - energy, thermal and aux
-data_energy_thermal_aux = dataLoader.DatasetCombined(7)
+data_energy_thermal_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(7)
 split_lengths_energy_thermal_aux = [int(len(data_energy_thermal_aux)*0.6+1), int(len(data_energy_thermal_aux)*0.4)]
 ds_train_energy_thermal_aux, ds_test_energy_thermal_aux = random_split(data_energy_thermal_aux, split_lengths_energy_thermal_aux)
 dl_train_energy_thermal_aux = DataLoader(ds_train_energy_thermal_aux, batch_size=4, shuffle=True)
@@ -102,10 +102,6 @@ list_DL_tuples.append( (dl_train_energy_thermal_aux, dl_test_energy_thermal_aux)
 # Model
 encoder = auto_encoder.EncoderCNN()
 decoder = auto_encoder.DecoderCNN()
-
-
-
-
 
 #Data
 data = dataLoader.DatasetCombined(7)
@@ -180,38 +176,3 @@ else:
                               post_epoch_fn=None)
         fit_results.append(res)
 
-    # with open('fit_results.txt', 'w') as f:
-    #     for i in range(len(fit_results)):
-    #         print("current dataset is: " + str(i))
-    #         f.write("%s\n" % fit_results[i])
-
-
-    # for i in range(len(list_DL_tuples)):
-    #     if os.path.isfile(f'{checkpoint_file_final}.pt'):
-    #         print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
-    #         current_check_point_file = f'{checkpoint_file_final}_' + str(i)
-    #     res = trainer_CE.fit(list_DL_tuples[i][0], list_DL_tuples[i][1],
-    #                           num_epochs=200, early_stopping=20, print_every=10,
-    #                           checkpoints=checkpoint_file,
-    #                           post_epoch_fn=post_epoch_fn)
-
-
-# enc_feedforward = enc(dl_sample) # shape is 4,1024,319
-# decoded = dec(enc_feedforward) #shape is 4,1,314
-# print(enc_feedforward)
-
-
-
-# def test_vae_loss():
-#     # Test data
-#     N, C, H, W = 10, 3, 64, 64 #TODO: figure out the parameters
-#     z_dim = 1 #TODO: figure out the parameters
-#     # x = torch.randn(N, C, H, W) * 2 - 1
-#     x  = torch.randn(1, *raw_sample.shape)
-#     # xr = torch.randn(N, C, H, W) * 2 - 1
-#     xr = self.features_decoder(h)
-#     z_mu = torch.randn(N, z_dim)
-#     z_log_sigma2 = torch.randn(N, z_dim)
-#     x_sigma2 = 0.9
-#     loss, _, _ = vae_loss(x, xr, z_mu, z_log_sigma2, x_sigma2)
-#     return loss

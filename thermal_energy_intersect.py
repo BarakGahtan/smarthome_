@@ -93,20 +93,21 @@ def read_data_from_thermal(given_path):
 
 
 def make_intersection_energy_manag_thermal_prob(energy, thermal):
-    week = 86400
+    day = 86400
     array_list_thermal = []
-    for i in range(math.ceil(np.amax(thermal, axis=0)[0] / week)):
-        array_list_thermal.append([x for x in thermal if (i + 1) * week > x[0] >= i * week])
+    for i in range(math.ceil(np.amax(thermal, axis=0)[0] / day)):
+        array_list_thermal.append([x for x in thermal if (i + 1) * day > x[0] >= i * day])
 
     mat_list_thermal = []
     tensor_list_thermal = []
+    thermal_lables = []
     for i in range(len(array_list_thermal)):
         mat_list_thermal.append(np.asarray(array_list_thermal[i]))
         tensor_list_thermal.append(torch.from_numpy(np.asarray(array_list_thermal[i])))
 
     array_list_energy = []
-    for i in range(math.ceil(np.amax(energy, axis=0)[0] / week)):
-        array_list_energy.append([x for x in energy if (i + 1) * week > x[0] >= i * week])
+    for i in range(math.ceil(np.amax(energy, axis=0)[0] / day)):
+        array_list_energy.append([x for x in energy if (i + 1) * day > x[0] >= i * day])
 
     mat_list_energy = []
     tensor_list_energy = []
@@ -130,9 +131,12 @@ def make_intersection_energy_manag_thermal_prob(energy, thermal):
     #     count += 1
 
     count = 0
+    for current_mat in mat_list_thermal:
+        if len(current_mat) is 0: continue
+        thermal_lables.append((current_mat, np.argmax(np.max(current_mat, axis=1))))
     # for current_mat in mat_list_thermal:
     #     if len(current_mat) is 0:
-    #         print( "week number " + str(count) +" is empty.")
+    #         print( "day number " + str(count) +" is empty.")
     #         count+=1
     #         continue
     #     plt.scatter(current_mat[:, 0], current_mat[:, 1], s=1, c='blue')
@@ -207,7 +211,7 @@ eng_mana_actuator_merge = np.delete(eng_mana_actuator_merge, indices_eng_mana_ac
 # find the minimum value of time
 minimum_time = np.amin(eng_mana_actuator_merge, axis=0)
 eng_mana_actuator_merge[:, 0] -= float(minimum_time[0])
-print("minimum time value for energy is " + str(minimum_time[0]))
+# print("minimum time value for energy is " + str(minimum_time[0]))
 eng_mana_actuator_merge_sorted = eng_mana_actuator_merge[np.argsort(eng_mana_actuator_merge[:, 0])]
 ########################################################################################################################
 #thermal preparation
@@ -247,10 +251,10 @@ def pad_tensor_list(list):
     max_len = max([len(i) for i in list])
     return [torch.cat((l, torch.zeros(max_len - len(l), 2, dtype=torch.float64)), dim=0 ) for l in list], max_len
 ###
-    week = 86400
+    day = 86400
     array_list_thermal = []
-    for i in range(math.ceil(np.amax(thermal, axis=0)[0] / week)):
-        array_list_thermal.append([x for x in thermal if (i + 1) * week > x[0] >= i * week])
+    for i in range(math.ceil(np.amax(thermal, axis=0)[0] / day)):
+        array_list_thermal.append([x for x in thermal if (i + 1) * day > x[0] >= i * day])
 
 
 def prefix_sum(data, legnth):
@@ -268,23 +272,29 @@ def prefix_sum(data, legnth):
 
     i=1
     for current_time_slot in range(int(time_unit),86400,int(time_unit)):
-        flag = 0
         if i == legnth: break
         res[i] = res[i - 1]
         for row in data:
             if  float(current_time_slot)  <= row[0] <= float(current_time_slot + time_unit):
-                #flag =1
                 res[i] += row[1]
-        #if flag == 0:
-         #   res[i] = res[i-1]
         i += 1
     return res
 
 
+def thermal_labels(list_mat_thermal):
+    labels = []
+    for current_mat in list_mat_thermal:
+        if len(current_mat) is 0: continue
+        label = current_mat[np.argmax(current_mat,axis=0)[1],:][0] - current_mat[np.argmin(current_mat,axis=0)[0],:][0]
+        labels.append( (current_mat,label))
+    return labels
 
 def return_data(isEnergy):
     list_mat_thermal, list_mat_energy, tensor_list_thermal, tensor_list_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
     thermal_probe_merge_sorted)
+    thermal_labels_peak_ratio_in_day = thermal_labels(list_mat_thermal)
+
+
     avg = 0
     for i in range(len(list_mat_energy)):
         avg += len(list_mat_energy)
@@ -295,10 +305,45 @@ def return_data(isEnergy):
     D1_arrays_thermal = []
     for i in range(len(list_mat_energy)):
         D1_arrays_thermal.append(prefix_sum(list_mat_thermal[i], int(np.ceil(avg))))
+
+    def find_maximum_delta(array):
+        max_delta = 0
+        index = 0 
+        for i in range(1,len(array)):
+            if array[i] - array[i-1] > max_delta:
+                max_delta = array[i] - array[i-1]
+                index = i
+        return index
+
+    D1_arrays_thermal_labels_of_prefix = []
+    for current_mat in D1_arrays_thermal:
+        if len(current_mat) is 0: continue
+        # D1_arrays_thermal_labels.append((current_mat, np.argmax(np.max(current_mat, axis=1))))
+        D1_arrays_thermal_labels_of_prefix.append((current_mat, find_maximum_delta(current_mat)))
+
+    #D1_arrays_thermal_labels_of_prefix biggest delta for the lablels.
+    #thermal_labels_peak_ratio_in_day - time inside the day when the thermal value was at its peak. [array(not prefix), ratio time].
+
+    # for current_mat in mat_list_thermal:
+    #     if len(current_mat) is 0:
+    #         print( "week number " + str(count) +" is empty.")
+    #         count+=1
+    #         continue
+    #     plt.scatter(current_mat[:, 0], current_mat[:, 1], s=1, c='blue')
+    #     title_str = "Thermal, day number " +str(count)
+    #     plt.title(title_str)
+    #     plt.xlabel('Time')
+    #     plt.ylabel('Value')
+    #     title_str_png = title_str + ".png"
+    #     plt.savefig(title_str_png, dpi=300, bbox_inches='tight')
+    #     plt.show()
+    #     title_str_png = title_str +".png"
+    #     #plt.imsave(title_str_png,)
+    #     count += 1
     if isEnergy == 1:
-        return D1_arrays_energy
+        return D1_arrays_energy, thermal_labels_peak_ratio_in_day
     else:
-        return D1_arrays_thermal
+        return D1_arrays_thermal, thermal_labels_peak_ratio_in_day
 
 
 

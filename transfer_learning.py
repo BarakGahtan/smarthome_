@@ -1,23 +1,117 @@
 from __future__ import print_function, division
+import os
+import IPython.display
+import matplotlib.pyplot as plt
+import torch
+import torch.optim as optim
+from torch.nn import DataParallel
+from torch.optim import lr_scheduler
+from torch.utils.data import DataLoader
+from torch.utils.data import random_split
+import auto_encoder
+import auto_encoder as autoencoder
+import main_data as dataLoader
+from cs236781 import plot
+from training import VAETrainer
+import copy
+from datetime import time
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim import lr_scheduler
 import numpy as np
 import torchvision
+from torch.utils.data import random_split
 from torchvision import datasets, models, transforms
-import matplotlib.pyplot as plt
-import time
-import os
-import copy
+import main_data as dataLoader
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
+
+
+
+# preparing different datasets
+# 1 - aux sensor only
+data_aux = dataLoader.DatasetCombined(1)
+split_lengths_aux = [int(len(data_aux)*0.6+1), int(len(data_aux)*0.4)]
+ds_train_aux, ds_test_aux = random_split(data_aux, split_lengths_aux)
+dl_train_0 = DataLoader(ds_train_aux, batch_size=4, shuffle=True)
+dl_test_0 = DataLoader(ds_test_aux, batch_size=4, shuffle=True)
+
+# 2 - thermal sensor only
+data_thermal,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(2)
+split_lengths_thermal = [int(len(data_thermal)*0.6+1), int(len(data_thermal)*0.4)]
+ds_train_thermal, ds_test_thermal = random_split(data_thermal, split_lengths_thermal)
+dl_train_1 = DataLoader(ds_train_thermal, batch_size=4, shuffle=True)
+dl_test_1 = DataLoader(ds_test_thermal, batch_size=4, shuffle=True)
+
+# 3 - energy sensor only
+data_energy,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(3)
+split_lengths_energy = [int(len(data_energy)*0.6+1), int(len(data_energy)*0.4)]
+ds_train_energy, ds_test_energy = random_split(data_energy, split_lengths_energy)
+dl_train_2 = DataLoader(ds_train_energy, batch_size=4, shuffle=True)
+dl_test_2 = DataLoader(ds_test_energy, batch_size=4, shuffle=True)
+
+# 4 - thermal and aux
+data_thermal_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(4)
+split_lengths_thermal_aux = [int(len(data_thermal_aux)*0.6), int(len(data_thermal_aux)*0.4)]
+ds_train_thermal_aux, ds_test_thermal_aux = random_split(data_thermal_aux, split_lengths_thermal_aux)
+dl_train_3 = DataLoader(ds_train_thermal_aux, batch_size=4, shuffle=True)
+dl_test_3 = DataLoader(ds_test_thermal_aux, batch_size=4, shuffle=True)
+
+# 5 - energy and aux
+data_energy_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(5)
+split_lengths_energy_aux = [int(len(data_energy_aux)*0.6), int(len(data_energy_aux)*0.4)]
+ds_train_energy_aux, ds_test_energy_aux = random_split(data_energy_aux, split_lengths_energy_aux)
+dl_train_4 = DataLoader(ds_train_energy_aux, batch_size=4, shuffle=True)
+dl_test_4 = DataLoader(ds_test_energy_aux, batch_size=4, shuffle=True)
+
+# 6 - energy and thermal
+data_energy_thermal,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(6)
+split_lengths_energy_thermal = [int(len(data_energy_thermal)*0.6+1), int(len(data_energy_thermal)*0.4)]
+ds_train_energy_thermal, ds_test_energy_thermal = random_split(data_energy_thermal, split_lengths_energy_thermal)
+dl_train_5 = DataLoader(ds_train_energy_thermal, batch_size=4, shuffle=True)
+dl_test_5 = DataLoader(ds_test_energy_thermal, batch_size=4, shuffle=True)
+
+# 7 - energy, thermal and aux
+data_energy_thermal_aux,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(7)
+split_lengths_energy_thermal_aux = [int(len(data_energy_thermal_aux)*0.6+1), int(len(data_energy_thermal_aux)*0.4)]
+ds_train_energy_thermal_aux, ds_test_energy_thermal_aux = random_split(data_energy_thermal_aux, split_lengths_energy_thermal_aux)
+dl_train_6 = DataLoader(ds_train_energy_thermal_aux, batch_size=4, shuffle=True)
+dl_test_6 = DataLoader(ds_test_energy_thermal_aux, batch_size=4, shuffle=True)
+
+loaded_model_0 = torch.load("vae_final_0.pt",map_location=torch.device('cpu'))
+loaded_model_1 = torch.load("vae_final_1.pt",map_location=torch.device('cpu'))
+loaded_model_2 = torch.load("vae_final_2.pt",map_location=torch.device('cpu'))
+loaded_model_3 = torch.load("vae_final_3.pt",map_location=torch.device('cpu'))
+loaded_model_4 = torch.load("vae_final_4.pt",map_location=torch.device('cpu'))
+loaded_model_5 = torch.load("vae_final_5.pt",map_location=torch.device('cpu'))
+loaded_model_6 = torch.load("vae_final_6.pt",map_location=torch.device('cpu'))
+data, thermal_labels = dataLoader.DatasetCombined(2)
+split_lengths_thermal_labels = [int(len(thermal_labels)*0.7), int(len(thermal_labels)*0.3)]
+ds_train_thermal_labels, ds_test_thermal_labels = random_split(thermal_labels, split_lengths_thermal_labels)
+
+
+class Predictor(nn.Module):
+    def __init__(self, in_channels=1, out_channels = 1024):
+        super().__init__()
+        modules = []
+        modules.append(nn.Linear(in_channels=in_channels, out_channels=64))
+        modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
+        modules.append(nn.Linear(64, 128))
+        modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
+        self.cnn = nn.Sequential(*modules)
+
+    def forward(self, x):
+        return self.cnn(x)
+
+
+
+
+
+
+def train_model(model, criterion, optimizer, scheduler, num_epochs=25, dl_train, dl_test):
     since = time.time()
-
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
-
     for epoch in range(num_epochs):
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print('-' * 10)
@@ -80,3 +174,38 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=25):
     model.load_state_dict(best_model_wts)
     return model
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+optimizer_0 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_1 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_2 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_3 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_4 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_5 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+optimizer_6 = optim.SGD(loaded_model_0.parameters(), lr=0.001, momentum=0.9)
+
+exp_lr_scheduler_0 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_1 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_2 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_3 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_4 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_5 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+exp_lr_scheduler_6 = lr_scheduler.StepLR(optimizer_0, step_size=7, gamma=0.1)
+
+criterion_CE = nn.CrossEntropyLoss()
+criterion_MSE = nn.MSELoss()
+
+model_ft_0_CE = train_model(loaded_model_0, criterion_CE, optimizer_0, exp_lr_scheduler_0,num_epochs=25)
+model_ft_1_CE = train_model(loaded_model_1, criterion_CE, optimizer_1, exp_lr_scheduler_1,num_epochs=25)
+model_ft_2_CE = train_model(loaded_model_2, criterion_CE, optimizer_2, exp_lr_scheduler_2,num_epochs=25)
+model_ft_3_CE = train_model(loaded_model_3, criterion_CE, optimizer_3, exp_lr_scheduler_3,num_epochs=25)
+model_ft_4_CE = train_model(loaded_model_4, criterion_CE, optimizer_4, exp_lr_scheduler_4,num_epochs=25)
+model_ft_5_CE = train_model(loaded_model_5, criterion_CE, optimizer_5, exp_lr_scheduler_5,num_epochs=25)
+model_ft_6_CE = train_model(loaded_model_6, criterion_CE, optimizer_6, exp_lr_scheduler_6,num_epochs=25)
+
+model_ft_0_MSE= train_model(loaded_model_0, criterion_MSE, optimizer_0, exp_lr_scheduler_0,num_epochs=25)
+model_ft_1_MSE = train_model(loaded_model_1, criterion_MSE, optimizer_1, exp_lr_scheduler_1,num_epochs=25)
+model_ft_2_MSE = train_model(loaded_model_2, criterion_MSE, optimizer_2, exp_lr_scheduler_2,num_epochs=25)
+model_ft_3_MSE = train_model(loaded_model_3, criterion_MSE, optimizer_3, exp_lr_scheduler_3,num_epochs=25)
+model_ft_4_MSE = train_model(loaded_model_4, criterion_MSE, optimizer_4, exp_lr_scheduler_4,num_epochs=25)
+model_ft_5_MSE = train_model(loaded_model_5, criterion_MSE, optimizer_5, exp_lr_scheduler_5,num_epochs=25)
+model_ft_6_MSE = train_model(loaded_model_6, criterion_MSE, optimizer_6, exp_lr_scheduler_6,num_epochs=25)

@@ -20,7 +20,7 @@ def data_wrapper(flag):
         return normalized_results
     if flag == 2:#only thermal sensors.
         res = []
-        thermal = thermal_energy_loader.return_data(0)
+        thermal,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(0)
         for j in range(len(thermal)):
             res.append(tf.convert_to_tensor(thermal[j], dtype=tf.float32))  # before it was only insert without conversion
         max = tf.reduce_max(tf.stack(res))
@@ -28,10 +28,10 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
     if flag == 3:#only energy sensors.
         res = []
-        energy = thermal_energy_loader.return_data(1)
+        energy,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(1)
         for j in range(len(energy)):
             res.append(tf.convert_to_tensor(energy[j],dtype=tf.float32))  #before it was only insert without conversion
         max = tf.reduce_max(tf.stack(res))
@@ -39,11 +39,11 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x-min) / (max-min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
     if flag == 4: #only thermal and aux sensors.
         res = []
         aux = aux_loader.return_data()
-        thermal = thermal_energy_loader.return_data(0)
+        thermal,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(0)
         for j in range(len(aux)):
             res.append(tf.convert_to_tensor(aux[j], dtype=tf.float32))  # before it was only insert without conversion
         for j in range(len(thermal)):
@@ -54,11 +54,11 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
     if flag == 5: #only energy and aux sensors.
         res = []
         aux = aux_loader.return_data()
-        energy = thermal_energy_loader.return_data(1)
+        energy, thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(1)
         for j in range(len(aux)):
             res.append(tf.convert_to_tensor(aux[j], dtype=tf.float32))  # before it was only insert without conversion
         for j in range(len(energy)):
@@ -69,11 +69,11 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
     if flag == 6: #only energy and thermal sensors.
         res = []
-        thermal = thermal_energy_loader.return_data(0)
-        energy = thermal_energy_loader.return_data(1)
+        thermal,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(0)
+        energy, thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(1)
         for j in range(len(thermal)):
             res.append(
                 tf.convert_to_tensor(thermal[j], dtype=tf.float32))  # before it was only insert without conversion
@@ -85,12 +85,12 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
     if flag == 7:# aux, energy and thermal sensors.
         res = []
         aux = aux_loader.return_data()
-        thermal = thermal_energy_loader.return_data(0)
-        energy = thermal_energy_loader.return_data(1)
+        thermal,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(0)
+        energy,thermal_labels_peak_ratio_in_day = thermal_energy_loader.return_data(1)
         for j in range(len(aux)):
             res.append(tf.convert_to_tensor(aux[j], dtype=tf.float32))  # before it was only insert without conversion
         for j in range(len(thermal)):
@@ -104,7 +104,7 @@ def data_wrapper(flag):
         normalized_results = []
         for t in res:
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
-        return normalized_results
+        return normalized_results,thermal_labels_peak_ratio_in_day
 
 
 class DatasetCombined(Dataset):
@@ -120,5 +120,6 @@ class DatasetCombined(Dataset):
         sample = np.expand_dims(self.data[idx], axis=0)
         return sample
 
-
+    def get_labels(self):
+        return data_wrapper(2)
 
