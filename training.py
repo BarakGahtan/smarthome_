@@ -64,8 +64,7 @@ class Trainer(abc.ABC):
                 saved_state = torch.load(checkpoint_filename,
                                          map_location=self.device)
                 best_acc = saved_state.get('best_acc', best_acc)
-                epochs_without_improvement =\
-                    saved_state.get('ewi', epochs_without_improvement)
+                epochs_without_improvement = saved_state.get('ewi', epochs_without_improvement)
                 self.model.load_state_dict(saved_state['model_state'])
 
         for epoch in range(num_epochs):
@@ -143,30 +142,6 @@ class Trainer(abc.ABC):
         self.model.train(False)  # set evaluation (test) mode
         return self._foreach_batch(dl_test, self.test_batch, **kw)
 
-    @abc.abstractmethod
-    def train_batch(self, batch) -> BatchResult:
-        """
-        Runs a single batch forward through the model, calculates loss,
-        preforms back-propagation and uses the optimizer to update weights.
-        :param batch: A single batch of data  from a data loader (might
-            be a tuple of data and labels or anything else depending on
-            the underlying dataset.
-        :return: A BatchResult containing the value of the loss function and
-            the number of correctly classified samples in the batch.
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def test_batch(self, batch) -> BatchResult:
-        """
-        Runs a single batch forward through the model and calculates loss.
-        :param batch: A single batch of data  from a data loader (might
-            be a tuple of data and labels or anything else depending on
-            the underlying dataset.
-        :return: A BatchResult containing the value of the loss function and
-            the number of correctly classified samples in the batch.
-        """
-        raise NotImplementedError()
 
     @staticmethod
     def _print(message, verbose=True):
