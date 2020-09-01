@@ -274,3 +274,22 @@ class VAETrainer(Trainer):
             xr, z_mu, z_log_sigma2 = self.model(x)
             loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
         return BatchResult(loss.item(), 1/data_loss.item())
+
+class PredictorTrainer(Trainer):
+    def train_batch(self, batch) -> BatchResult:
+        x = batch
+        x = x.to(self.device)
+        #Train on one batch.
+        self.optimizer.zero_grad()
+        loss, data_loss, _ = self.loss_fn(x)
+        loss.backward()
+        self.optimizer.step()
+        return BatchResult(loss.item(), 1/data_loss.item())
+
+    def test_batch(self, batch) -> BatchResult:
+        x = batch
+        x = x.to(self.device)  # Image batch (N,C,H,W)
+        with torch.no_grad():
+            xr, z_mu, z_log_sigma2 = self.model(x)
+            loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
+        return BatchResult(loss.item(), 1/data_loss.item())

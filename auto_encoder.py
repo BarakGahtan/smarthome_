@@ -7,7 +7,6 @@ class EncoderCNN(nn.Module):
     def __init__(self, in_channels=1, out_channels = 1024):
         super().__init__()
         modules = []
-
         modules.append(nn.Conv1d(in_channels=in_channels, out_channels=64, kernel_size=2, stride=1, padding=1))
         modules.append(torch.nn.BatchNorm1d(64))
         modules.append(torch.nn.LeakyReLU(0.2, inplace=True))
