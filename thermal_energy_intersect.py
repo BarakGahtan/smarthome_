@@ -281,24 +281,25 @@ def prefix_sum(data, legnth):
     return res
 
 
-def thermal_labels(list_mat_thermal):
+def thermal_labels(list_mat_thermal,avg):
     labels = []
     for current_mat in list_mat_thermal:
         if len(current_mat) is 0: continue
         label = current_mat[np.argmax(current_mat,axis=0)[1],:][0] - current_mat[np.argmin(current_mat,axis=0)[0],:][0]
-        labels.append( (current_mat,label))
+        mat = prefix_sum(current_mat, int(np.ceil(avg)))
+        labels.append( (mat,label))
     return labels
 
 def return_data(isEnergy):
     list_mat_thermal, list_mat_energy, tensor_list_thermal, tensor_list_energy = make_intersection_energy_manag_thermal_prob(eng_mana_actuator_merge_sorted,
     thermal_probe_merge_sorted)
-    thermal_labels_peak_ratio_in_day = thermal_labels(list_mat_thermal)
-
-
     avg = 0
     for i in range(len(list_mat_energy)):
         avg += len(list_mat_energy)
     avg /= len(list_mat_energy)
+    thermal_labels_peak_ratio_in_day = thermal_labels(list_mat_thermal,avg)
+    energy_labels_peak_ratio_in_day = thermal_labels(list_mat_energy,avg)
+
     D1_arrays_energy = []
     for i in range(len(list_mat_energy)):
         D1_arrays_energy.append(prefix_sum(list_mat_energy[i], int(np.ceil(avg))))
@@ -341,7 +342,7 @@ def return_data(isEnergy):
     #     #plt.imsave(title_str_png,)
     #     count += 1
     if isEnergy == 1:
-        return D1_arrays_energy, thermal_labels_peak_ratio_in_day
+        return D1_arrays_energy, energy_labels_peak_ratio_in_day
     else:
         return D1_arrays_thermal, thermal_labels_peak_ratio_in_day
 

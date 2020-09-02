@@ -41,11 +41,11 @@ betas = hp['betas']
 
 # preparing different datasets
 # 1 - aux sensor only
-data_aux = dataLoader.DatasetCombined(1)
-split_lengths_aux = [int(len(data_aux)*0.6+1), int(len(data_aux)*0.4)]
-ds_train_aux, ds_test_aux = random_split(data_aux, split_lengths_aux)
-dl_train_aux = DataLoader(ds_train_aux, batch_size=4, shuffle=True)
-dl_test_aux = DataLoader(ds_test_aux, batch_size=4, shuffle=True)
+# data_aux = dataLoader.DatasetCombined(1)
+# split_lengths_aux = [int(len(data_aux)*0.6+1), int(len(data_aux)*0.4)]
+# ds_train_aux, ds_test_aux = random_split(data_aux, split_lengths_aux)
+# dl_train_aux = DataLoader(ds_train_aux, batch_size=4, shuffle=True)
+# dl_test_aux = DataLoader(ds_test_aux, batch_size=4, shuffle=True)
 
 # 2 - thermal sensor only
 data_thermal,thermal_labels_peak_ratio_in_day = dataLoader.DatasetCombined(2)

@@ -229,6 +229,7 @@ def return_data():
     for current_list in result_list:
         for j in range(len(current_list)):
             merge_list.append(current_list[j])
+
     return merge_list
 
 return_data()

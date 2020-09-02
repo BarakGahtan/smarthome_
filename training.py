@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from typing import Callable, Any
 from pathlib import Path
 from cs236781.train_results import BatchResult, EpochResult, FitResult
-
+import torch.nn.functional as F
 
 class Trainer(abc.ABC):
     """
@@ -177,6 +177,7 @@ class Trainer(abc.ABC):
                        file=pbar_file) as pbar:
             dl_iter = iter(dl)
             for batch_idx in range(num_batches):
+                if batch_idx == num_batches-1: continue
                 data = next(dl_iter)
                 batch_res = forward_fn(data)
 
@@ -277,19 +278,38 @@ class VAETrainer(Trainer):
 
 class PredictorTrainer(Trainer):
     def train_batch(self, batch) -> BatchResult:
-        x = batch
+        # Train on one batch.
+        x_original = batch
+        x = x_original['array']
+        x = x.float()
         x = x.to(self.device)
-        #Train on one batch.
+        x = self.model(x)
+
+        x_label = x_original['label']
+        x_label = x_label.float()
+        x_label = x_label.mean() #validate it is ok
+        x_label = x_label.to(self.device)
         self.optimizer.zero_grad()
-        loss, data_loss, _ = self.loss_fn(x)
+        loss = F.mse_loss(x, x_label)
+        loss = loss.float()
         loss.backward()
         self.optimizer.step()
-        return BatchResult(loss.item(), 1/data_loss.item())
+        return BatchResult(loss.item(), 1/loss.item())
+        # return BatchResult(loss.item(), 1 / data_loss.item())
 
     def test_batch(self, batch) -> BatchResult:
-        x = batch
-        x = x.to(self.device)  # Image batch (N,C,H,W)
+        x_original = batch
+        x = x_original['array']
+        x = x.float()
+        x = x.to(self.device)
+
+        x_label = x_original['label']
+        x_label = x_label.float()
+        x_label = x_label.mean()  # validate it is ok
+        x_label = x_label.to(self.device)
+
         with torch.no_grad():
-            xr, z_mu, z_log_sigma2 = self.model(x)
-            loss, data_loss, _ = self.loss_fn(x, xr, z_mu, z_log_sigma2)
-        return BatchResult(loss.item(), 1/data_loss.item())
+            xr = self.model(x)
+            loss = F.mse_loss(xr, x_label)
+        return BatchResult(loss.item(), 1/loss.item())
+        # return BatchResult(loss.item(), 1 / data_loss.item())
