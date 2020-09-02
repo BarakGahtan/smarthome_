@@ -120,10 +120,10 @@ dataload_sample = next(iter(dl_train_0))
 data, thermal_labels = dataLoader.DatasetCombined(2)
 thermal_list_labels = []
 thermal_labels = thermal_labels.squeeze(0)
-for i in range(np.shape(thermal_labels)[0]):
+for i in range(np.shape(thermal_labels)[0]-3):
     thermal_list_labels.append((thermal_labels[i][0],thermal_labels[i][1]))
 
-ds_train_thermal_labels, ds_test_thermal_labels = random_split(thermal_list_labels, [150,37]) #80\20 train\test
+ds_train_thermal_labels, ds_test_thermal_labels = random_split(thermal_list_labels, [148,36]) #80\20 train\test
 ds_train_lables = Labels(ds_train_thermal_labels)
 ds_test_lables = Labels(ds_test_thermal_labels)
 dl_train_thermal = DataLoader(ds_train_lables, batch_size=4, shuffle=True)
@@ -137,14 +137,14 @@ for i in range(np.shape(energy_labels_peak_ratio_in_day)[0]):
     energy_list_labels.append((energy_labels_peak_ratio_in_day[i][0],energy_labels_peak_ratio_in_day[i][1]))
 
 
-ds_train_energy_labels, ds_test_energy_labels = random_split(energy_list_labels, [99,25]) #80\20 train\test
+ds_train_energy_labels, ds_test_energy_labels = random_split(energy_list_labels, [100,24]) #80\20 train\test
 ds_train_lables_energy = Labels(ds_train_energy_labels)
 ds_test_lables_energy = Labels(ds_test_energy_labels)
 dl_train_lables_energy = DataLoader(ds_train_lables_energy, batch_size=4, shuffle=True)
 dl_test_lables_energy = DataLoader(ds_test_lables_energy, batch_size=4, shuffle=True)
 # 6 - energy and thermal
 energy_thermal =energy_list_labels + thermal_list_labels
-ds_train_energy_thermal_labels, ds_test_energy_thermal_labels = random_split(energy_thermal, [248,63]) #80\20 train\test
+ds_train_energy_thermal_labels, ds_test_energy_thermal_labels = random_split(energy_thermal, [248,60]) #80\20 train\test
 ds_train_lables_energy_thermal = Labels(ds_train_energy_thermal_labels)
 ds_test_lables_energy_thermal = Labels(ds_train_energy_thermal_labels)
 dl_train_lables_energy_thermal = DataLoader(ds_train_lables_energy_thermal, batch_size=4, shuffle=True)
@@ -220,12 +220,13 @@ else:
             print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
             current_check_point_file = f'{checkpoint_file_final}_' + str(i)
         current_check_point_file = f'{checkpoint_file_final}_' + str(i)
-        res = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
-                                            num_epochs=200, early_stopping=20, print_every=10,
-                                            checkpoints=current_check_point_file,
-                                            post_epoch_fn=None)
-        # res = trainer_Predictor_list[i].fit(dl_train_list[i][0], dl_train_list[i][1],
-        #                       num_epochs=200, early_stopping=20, print_every=10,
-        #                       checkpoints=current_check_point_file,
-        #                       post_epoch_fn=None)
+        print("model number :" + str(i))
+        # res = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+        #                                     num_epochs=200, early_stopping=20, print_every=10,
+        #                                     checkpoints=current_check_point_file,
+        #                                     post_epoch_fn=None)
+        res = trainer_Predictor_list[i].fit(dl_train_list[i][0], dl_train_list[i][1],
+                              num_epochs=200, early_stopping=20, print_every=10,
+                              checkpoints=current_check_point_file,
+                              post_epoch_fn=None)
         fit_results.append(res)

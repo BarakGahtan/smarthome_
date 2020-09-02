@@ -177,7 +177,7 @@ class Trainer(abc.ABC):
                        file=pbar_file) as pbar:
             dl_iter = iter(dl)
             for batch_idx in range(num_batches):
-                if batch_idx == num_batches-1: continue
+                # if batch_idx == num_batches-1: continue
                 data = next(dl_iter)
                 batch_res = forward_fn(data)
 
@@ -307,11 +307,12 @@ class PredictorTrainer(Trainer):
 
         x_label = x_original['label']
         x_label = x_label.float()
+        x_label = torch.div(x_label, 86400)
         x_label = x_label.mean()  # validate it is ok
+        x_label = torch.abs(x_label)
         x_label = x_label.to(self.device)
 
         with torch.no_grad():
-
             xr = torch.abs(self.model(x))
             loss = F.mse_loss(xr, x_label)
         return BatchResult(loss.item(), (1-loss.item()))
