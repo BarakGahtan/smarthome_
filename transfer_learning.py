@@ -215,18 +215,22 @@ if os.path.isfile(f'{checkpoint_file_final}.pt'):
     checkpoint_file = checkpoint_file_final
 else:
     fit_results = []
-    for i in range(len(dl_train_list)):
-        if os.path.isfile(f'{checkpoint_file_final}.pt'):
-            print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
-            current_check_point_file = f'{checkpoint_file_final}_' + str(i)
+
+    if os.path.isfile(f'{checkpoint_file_final}.pt'):
+        print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
         current_check_point_file = f'{checkpoint_file_final}_' + str(i)
-        print("model number :" + str(i))
-        # res = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
-        #                                     num_epochs=200, early_stopping=20, print_every=10,
-        #                                     checkpoints=current_check_point_file,
-        #                                     post_epoch_fn=None)
-        res = trainer_Predictor_list[i].fit(dl_train_list[i][0], dl_train_list[i][1],
-                              num_epochs=200, early_stopping=20, print_every=10,
-                              checkpoints=current_check_point_file,
-                              post_epoch_fn=None)
-        fit_results.append(res)
+    current_check_point_file = f'{checkpoint_file_final}_' + str(i)
+    print("model number :" + str(i))
+    res_1 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+                                                num_epochs=200, early_stopping=20, print_every=10,
+                                                checkpoints=current_check_point_file,
+                                                post_epoch_fn=None)
+    res_2 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+                                          num_epochs=200, early_stopping=20, print_every=10,
+                                          checkpoints=current_check_point_file,
+                                          post_epoch_fn=None)
+    res_3 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+                                          num_epochs=200, early_stopping=20, print_every=10,
+                                          checkpoints=current_check_point_file,
+                                          post_epoch_fn=None)
+    fit_results = [ res_1, res_2, res_3]
