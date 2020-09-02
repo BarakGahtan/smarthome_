@@ -185,10 +185,10 @@ class Trainer(abc.ABC):
                 pbar.update()
 
                 losses.append(batch_res.loss)
-                num_correct += batch_res.num_correct
+                num_correct += batch_res.avg_accuracy
 
             avg_loss = sum(losses) / num_batches
-            accuracy = 100. * num_correct / num_samples
+            accuracy = 100. * num_correct / num_batches
             pbar.set_description(f'{pbar_name} '
                                  f'(Avg. Loss {avg_loss:.3f}, '
                                  f'Accuracy {accuracy:.1f})')
@@ -283,18 +283,20 @@ class PredictorTrainer(Trainer):
         x = x_original['array']
         x = x.float()
         x = x.to(self.device)
-        x = self.model(x)
+        x = torch.abs(self.model(x))
+
 
         x_label = x_original['label']
         x_label = x_label.float()
         x_label = x_label.mean() #validate it is ok
+        x_label = torch.div(x_label,86400)
         x_label = x_label.to(self.device)
         self.optimizer.zero_grad()
         loss = F.mse_loss(x, x_label)
         loss = loss.float()
         loss.backward()
         self.optimizer.step()
-        return BatchResult(loss.item(), 1/loss.item())
+        return BatchResult(loss.item(), (1-loss.item()))
         # return BatchResult(loss.item(), 1 / data_loss.item())
 
     def test_batch(self, batch) -> BatchResult:
@@ -309,7 +311,8 @@ class PredictorTrainer(Trainer):
         x_label = x_label.to(self.device)
 
         with torch.no_grad():
-            xr = self.model(x)
+
+            xr = torch.abs(self.model(x))
             loss = F.mse_loss(xr, x_label)
-        return BatchResult(loss.item(), 1/loss.item())
+        return BatchResult(loss.item(), (1-loss.item()))
         # return BatchResult(loss.item(), 1 / data_loss.item())
