@@ -107,8 +107,6 @@ class Trainer(abc.ABC):
             if early_stopping and epochs_without_improvement >= early_stopping:
                 self._print(f'--- Stopping early, no improvement ---', verbose)
                 break
-            # ========================
-
             # Save model checkpoint if requested
             if save_checkpoint and checkpoint_filename is not None:
                 saved_state = dict(best_acc=best_acc,ewi=epochs_without_improvement,
@@ -177,7 +175,7 @@ class Trainer(abc.ABC):
                        file=pbar_file) as pbar:
             dl_iter = iter(dl)
             for batch_idx in range(num_batches):
-                # if batch_idx == num_batches-1: continue
+                if batch_idx == num_batches-1: continue
                 data = next(dl_iter)
                 batch_res = forward_fn(data)
 
@@ -196,66 +194,6 @@ class Trainer(abc.ABC):
         return EpochResult(losses=losses, accuracy=accuracy)
 
 
-class RNNTrainer(Trainer):
-    def __init__(self, model, loss_fn, optimizer, device=None):
-        super().__init__(model, loss_fn, optimizer, device)
- 
-    def train_epoch(self, dl_train: DataLoader, **kw):
-        self.model.hidden_state = None
-        return super().train_epoch(dl_train, **kw)
- 
-    def test_epoch(self, dl_test: DataLoader, **kw):
-        self.model.hidden_state = None
-        return super().test_epoch(dl_test, **kw)
- 
-    def train_batch(self, batch) -> BatchResult:
-        x, y = batch
-        x = x.to(self.device, dtype=torch.float)  # (B,S,V)
-        y = y.to(self.device, dtype=torch.long)  # (B,S)
-        seq_len = y.shape[1]
-        # - Forward pass
-        # - Calculate total loss over sequence
-        # - Backward pass (BPTT)
-        # - Update params
-        # - Calculate number of correct char predictions
-        B, S, V = x.shape
-        # Forward pass
-        scores, hidden_state = self.model(x, self.model.hidden_state)
-        y_pred = torch.argmax(scores, dim=2)
-        loss = 0
-        for seq in range(B):
-            y_scores_seq = scores[seq, :, :]
-            y_true_seq = y[seq, :]
-            loss += self.loss_fn(y_scores_seq, y_true_seq)
-        # Backward pass
-        self.optimizer.zero_grad()
-        loss.backward(retain_graph=True)
-        # Optimization Step
-        self.optimizer.step()
-        # Correct char predictions
-        num_correct = torch.sum(y_pred.eq(y))
-        # Note: scaling num_correct by seq_len because each sample has seq_len different predictions.
-        return BatchResult(loss.item(), num_correct.item() / seq_len)
-    def test_batch(self, batch) -> BatchResult:
-        x, y = batch
-        x = x.to(self.device, dtype=torch.float)  # (B,S,V)
-        y = y.to(self.device, dtype=torch.long)  # (B,S)
-        seq_len = y.shape[1]
-        with torch.no_grad():
-            # - Forward pass
-            # - Loss calculation
-            # - Calculate number of correct predictions
-            loss = 0
-            B, S, V = x.shape
-            scores, hidden_state = self.model(x, self.model.hidden_state)
-            y_pred = torch.argmax(scores, dim=2)
-            for seq in range(B):
-                y_scores_seq = scores[seq, :, :]
-                y_true_seq = y[seq, :]
-                loss += self.loss_fn(y_scores_seq, y_true_seq)
-            num_correct = torch.sum(y_pred.eq(y))
-        return BatchResult(loss.item(), num_correct.item() / seq_len)
- 
 class VAETrainer(Trainer):
     def train_batch(self, batch) -> BatchResult:
         x = batch

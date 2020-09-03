@@ -16,6 +16,7 @@ from cs236781 import plot
 from training import VAETrainer, PredictorTrainer
 from torch.nn import DataParallel
 import numpy as np
+from matplotlib import pyplot as plt
 import torch.nn.functional as F
 
 # load models #
@@ -100,7 +101,6 @@ class Encoded_Predictor(nn.Module):
     def forward(self, x1):
         x1 = torch.flatten(self.modelA.module.features_encoder(x1))
         x2 = self.modelB(x1)
-        # x = torch.cat((x1, x2), dim=1)
         return x2
 
 ##########
@@ -120,10 +120,10 @@ dataload_sample = next(iter(dl_train_0))
 data, thermal_labels = dataLoader.DatasetCombined(2)
 thermal_list_labels = []
 thermal_labels = thermal_labels.squeeze(0)
-for i in range(np.shape(thermal_labels)[0]-3):
+for i in range(np.shape(thermal_labels)[0]):
     thermal_list_labels.append((thermal_labels[i][0],thermal_labels[i][1]))
 
-ds_train_thermal_labels, ds_test_thermal_labels = random_split(thermal_list_labels, [148,36]) #80\20 train\test
+ds_train_thermal_labels, ds_test_thermal_labels = random_split(thermal_list_labels, [150,37]) #80\20 train\test
 ds_train_lables = Labels(ds_train_thermal_labels)
 ds_test_lables = Labels(ds_test_thermal_labels)
 dl_train_thermal = DataLoader(ds_train_lables, batch_size=4, shuffle=True)
@@ -132,25 +132,25 @@ dl_test_thermal = DataLoader(ds_test_lables, batch_size=4, shuffle=True)
 # # 3 - energy sensor only
 data, energy_labels_peak_ratio_in_day = dataLoader.DatasetCombined(3)
 energy_list_labels = []
-energy_labels_peak_ratio_in_day = energy_labels_peak_ratio_in_day.squeeze(0)
+# energy_labels_peak_ratio_in_day = energy_labels_peak_ratio_in_day.squeeze(0)
 for i in range(np.shape(energy_labels_peak_ratio_in_day)[0]):
     energy_list_labels.append((energy_labels_peak_ratio_in_day[i][0],energy_labels_peak_ratio_in_day[i][1]))
 
 
-ds_train_energy_labels, ds_test_energy_labels = random_split(energy_list_labels, [100,24]) #80\20 train\test
+ds_train_energy_labels, ds_test_energy_labels = random_split(energy_list_labels, [99,25]) #80\20 train\test
 ds_train_lables_energy = Labels(ds_train_energy_labels)
 ds_test_lables_energy = Labels(ds_test_energy_labels)
 dl_train_lables_energy = DataLoader(ds_train_lables_energy, batch_size=4, shuffle=True)
 dl_test_lables_energy = DataLoader(ds_test_lables_energy, batch_size=4, shuffle=True)
 # 6 - energy and thermal
 energy_thermal =energy_list_labels + thermal_list_labels
-ds_train_energy_thermal_labels, ds_test_energy_thermal_labels = random_split(energy_thermal, [248,60]) #80\20 train\test
+ds_train_energy_thermal_labels, ds_test_energy_thermal_labels = random_split(energy_thermal, [248,63]) #80\20 train\test
 ds_train_lables_energy_thermal = Labels(ds_train_energy_thermal_labels)
 ds_test_lables_energy_thermal = Labels(ds_train_energy_thermal_labels)
 dl_train_lables_energy_thermal = DataLoader(ds_train_lables_energy_thermal, batch_size=4, shuffle=True)
 dl_test_lables_energy_thermal = DataLoader(ds_test_lables_energy_thermal, batch_size=4, shuffle=True)
 
-dl_train_list = [[dl_train_thermal,dl_test_thermal], [dl_train_lables_energy,dl_test_lables_energy],[dl_train_lables_energy_thermal,dl_test_lables_energy_thermal]]
+# dl_train_list = [[dl_train_thermal,dl_test_thermal], [dl_train_lables_energy,dl_test_lables_energy],[dl_train_lables_energy_thermal,dl_test_lables_energy_thermal]]
 
 # load models #
 
@@ -161,27 +161,46 @@ loaded_model_5 = torch.load("vae_final_5.pt",map_location=torch.device(device))
 # init encoder and decoder for loading #
 encoder = EncoderCNN()
 decoder = DecoderCNN()
-#creating the models
+predictor_0 = Predictor()
+#creating the models - vae trained + unfreeze
 vae_1 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
 vae_dp_1 = DataParallel(vae_1)
 vae_dp_1.load_state_dict(loaded_model_1['model_state'])
+model_1 = Encoded_Predictor(vae_dp_1,predictor_0)
 
 vae_2 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
 vae_dp_2 = DataParallel(vae_2)
 vae_dp_2.load_state_dict(loaded_model_2['model_state'])
+model_2 = Encoded_Predictor(vae_dp_2,predictor_0)
 
 vae_5 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
 vae_dp_5 = DataParallel(vae_5)
 vae_dp_5.load_state_dict(loaded_model_5['model_state'])
+model_5 = Encoded_Predictor(vae_dp_5,predictor_0)
 
-z = encoder(dataload_sample)
-z_flatten = torch.flatten(z)
-
-predictor_0 = Predictor()
+#creating the models - vae trained + freezed
+vae_1 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
+vae_dp_1 = DataParallel(vae_1)
+vae_dp_1.load_state_dict(loaded_model_1['model_state'])
 
 model_1 = Encoded_Predictor(vae_dp_1,predictor_0)
+
+vae_2 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
+vae_dp_2 = DataParallel(vae_2)
+vae_dp_2.load_state_dict(loaded_model_2['model_state'])
 model_2 = Encoded_Predictor(vae_dp_2,predictor_0)
+
+vae_5 = autoencoder.VAE(encoder, decoder, raw_sample.shape, 1)
+vae_dp_5 = DataParallel(vae_5)
+vae_dp_5.load_state_dict(loaded_model_5['model_state'])
 model_5 = Encoded_Predictor(vae_dp_5,predictor_0)
+
+# z = encoder(dataload_sample)
+# z_flatten = torch.flatten(z)
+
+
+
+
 
 
 
@@ -208,29 +227,42 @@ checkpoint_file_final = f'{checkpoint_file}_final_predictor'
 if os.path.isfile(f'{checkpoint_file}.pt'):
     os.remove(f'{checkpoint_file}.pt')
 
+def plot_accuracy(results, model_title):
+    plt.plot(results.train_acc)
+    plt.plot(results.test_acc)
+    plt.title(model_title)
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.ylim((70,100))
+    plt.legend(['train', 'test'], loc='lower right')
+    plt.text(20, 80., str("average train: "+ str(np.mean(results.train_acc))), family="monospace")
+    plt.text(20, 75., str("average test: " + str(np.mean(results.test_acc))), family="monospace")
+    # plt.show()
+    plt.savefig(str(model_title+".png"))
+    plt.close()
 
 print("GOT TO TRAINING PHASE")
 if os.path.isfile(f'{checkpoint_file_final}.pt'):
     print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
     checkpoint_file = checkpoint_file_final
 else:
-    fit_results = []
-
     if os.path.isfile(f'{checkpoint_file_final}.pt'):
         print(f'*** Loading final checkpoint file {checkpoint_file_final} instead of training')
         current_check_point_file = f'{checkpoint_file_final}_' + str(i)
     current_check_point_file = f'{checkpoint_file_final}_' + str(i)
-    print("model number :" + str(i))
     res_1 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
                                                 num_epochs=200, early_stopping=20, print_every=10,
                                                 checkpoints=current_check_point_file,
                                                 post_epoch_fn=None)
-    res_2 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+    plot_accuracy(res_1, "thermal model unfreezed")
+    res_2 = trainer_Predictor_2.fit(dl_train_lables_energy, dl_test_thermal,
                                           num_epochs=200, early_stopping=20, print_every=10,
                                           checkpoints=current_check_point_file,
                                           post_epoch_fn=None)
-    res_3 = trainer_Predictor_1.fit(dl_train_thermal, dl_test_thermal,
+    plot_accuracy(res_2, "energy model unfreezed")
+    res_3 = trainer_Predictor_5.fit(dl_train_lables_energy_thermal,dl_test_thermal,
                                           num_epochs=200, early_stopping=20, print_every=10,
                                           checkpoints=current_check_point_file,
                                           post_epoch_fn=None)
-    fit_results = [ res_1, res_2, res_3]
+    plot_accuracy(res_3, "energy and thermal model unfreezed")
+    # fit_results = [ res_1, res_2, res_3]
