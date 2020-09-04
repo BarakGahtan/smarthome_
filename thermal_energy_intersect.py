@@ -132,7 +132,7 @@ def make_intersection_energy_manag_thermal_prob(energy, thermal):
 
     count = 0
     for current_mat in mat_list_thermal:
-        if len(current_mat) is 0: continue
+        if len(current_mat) == 0: continue
         thermal_lables.append((current_mat, np.argmax(np.max(current_mat, axis=1))))
     # for current_mat in mat_list_thermal:
     #     if len(current_mat) is 0:
@@ -284,7 +284,7 @@ def prefix_sum(data, legnth):
 def thermal_labels(list_mat_thermal,avg):
     labels = []
     for current_mat in list_mat_thermal:
-        if len(current_mat) is 0: continue
+        if len(current_mat) == 0: continue
         label = current_mat[np.argmax(current_mat,axis=0)[1],:][0] - current_mat[np.argmin(current_mat,axis=0)[0],:][0]
         mat = prefix_sum(current_mat, int(np.ceil(avg)))
         labels.append( (mat,label))
@@ -318,7 +318,7 @@ def return_data(isEnergy):
 
     D1_arrays_thermal_labels_of_prefix = []
     for current_mat in D1_arrays_thermal:
-        if len(current_mat) is 0: continue
+        if len(current_mat) == 0: continue
         # D1_arrays_thermal_labels.append((current_mat, np.argmax(np.max(current_mat, axis=1))))
         D1_arrays_thermal_labels_of_prefix.append((current_mat, find_maximum_delta(current_mat)))
 

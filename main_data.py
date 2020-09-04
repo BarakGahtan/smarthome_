@@ -106,24 +106,10 @@ def data_wrapper(flag):
             normalized_results.append(tf.ragged.map_flat_values(lambda x: abs((x - min) / (max - min)), t))
         return normalized_results,thermal_labels_peak_ratio_in_day,energy_labels_peak_ratio_in_day
 
-
 class DatasetCombined(Dataset):
     def __init__(self, num):
         self.data = data_wrapper(num)
-        # if num == 2:
-        #     max = 0
-        #     for i in range(len(given_data)):
-        #         current_numpy = given_data[i]
-        #         current_shape = np.shape(current_numpy)[0]
-        #         if current_shape > max:
-        #             max = current_shape
-        #     new_list = []
-        #     shape = (max, 2)
-        #     for i in range(len(given_data)):
-        #         res = np.zeros(shape)
-        #         res[:given_data[0][i].shape[0], :given_data[0][i].shape[1]] = given_data[0][i]
-        #         new_list.append(res)
-        #     self.data = new_list
+
 
     def __len__(self):
         return len(self.data)
@@ -137,3 +123,16 @@ class DatasetCombined(Dataset):
     def get_labels(self):
         return data_wrapper(2)
 
+class Labels(torch.utils.data.Dataset):
+  def __init__(self, data):
+        self.data = data
+
+  def __len__(self):
+        return len(self.data)
+
+  def __getitem__(self, index):
+        sample = np.expand_dims(self.data[index][0], axis=0)
+        return {
+            'array': sample,
+            'label' : self.data[index][1]
+            }
