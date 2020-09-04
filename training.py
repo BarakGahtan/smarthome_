@@ -140,7 +140,7 @@ class Trainer(abc.ABC):
                        verbose=True, max_batches=None) -> EpochResult:
         losses = []
         num_correct = 0
-        snum_batches = len(dl.batch_sampler)-1
+        num_batches = len(dl.batch_sampler)-1
 
         if max_batches is not None:
             if max_batches < num_batches:
