@@ -79,7 +79,7 @@ decoder_1 = DecoderCNN()
 predictor_1 = Predictor()
 vae_1 = autoencoder.VAE(encoder_1, decoder_1, raw_sample.shape, 1)
 vae_dp_1 = DataParallel(vae_1)
-vae_dp_1.load_state_dict(loaded_model_1['model_state'],strict=False)
+# vae_dp_1.load_state_dict(loaded_model_1['model_state'],strict=False)
 model_1 = Encoded_Predictor(vae_dp_1,predictor_1)
 
 encoder_2 = EncoderCNN()
@@ -87,7 +87,7 @@ decoder_2 = DecoderCNN()
 predictor_2 = Predictor()
 vae_2 = autoencoder.VAE(encoder_2, decoder_2, raw_sample.shape, 1)
 vae_dp_2 = DataParallel(vae_2)
-vae_dp_2.load_state_dict(loaded_model_2['model_state'],strict=False)
+# vae_dp_2.load_state_dict(loaded_model_2['model_state'],strict=False)
 model_2 = Encoded_Predictor(vae_dp_2,predictor_2)
 
 encoder_5 = EncoderCNN()
@@ -95,7 +95,7 @@ decoder_5 = DecoderCNN()
 predictor_5 = Predictor()
 vae_5 = autoencoder.VAE(encoder_5, decoder_5, raw_sample.shape, 1)
 vae_dp_5 = DataParallel(vae_5)
-vae_dp_5.load_state_dict(loaded_model_5['model_state'],strict=False)
+# vae_dp_5.load_state_dict(loaded_model_5['model_state'],strict=False)
 model_5 = Encoded_Predictor(vae_dp_5,predictor_5)
 
 optimizer_1 =  optim.Adam(vae_1.parameters(), lr=learn_rate, betas=betas)
@@ -129,20 +129,20 @@ else:
                                                 checkpoints=current_check_point_file_1,
                                                 post_epoch_fn=None)
     # plot_fit(res_1)
-    plot_accuracy(res_1, "thermal model - VAE - with warm start",accuracy=True)
+    plot_accuracy(res_1, "thermal model - VAE - without warm start",accuracy=True)
     # plot_accuracy(res_1, "thermal model - VAE - with warm start",accuracy=False)
     current_check_point_file_2 = f'{checkpoint_file_final}_' + str(2)
     res_2 = trainer_Predictor_2.fit(dl_train_lables_energy, dl_test_thermal,
                                           num_epochs=200, early_stopping=20, print_every=10,
                                           checkpoints=current_check_point_file_2,
                                           post_epoch_fn=None)
-    plot_accuracy(res_2, "energy model - VAE - with warm start", accuracy=True)
+    plot_accuracy(res_2, "energy model - VAE - without warm start", accuracy=True)
     # plot_accuracy(res_2, "energy model - VAE - with warm start", accuracy=False)
     current_check_point_file_3 = f'{checkpoint_file_final}_' + str(5)
     res_3 = trainer_Predictor_5.fit(dl_train_lables_energy_thermal,dl_test_thermal,
                                           num_epochs=200, early_stopping=20, print_every=10,
                                           checkpoints=current_check_point_file_3,
                                           post_epoch_fn=None)
-    plot_accuracy(res_3, "energy and thermal model - VAE - with warm start", accuracy=True)
+    plot_accuracy(res_3, "energy and thermal model - VAE - without warm start", accuracy=True)
     # plot_accuracy(res_3, "energy and thermal model - VAE - with warm start", accuracy=False)
     # fit_results = [ res_1, res_2, res_3]
